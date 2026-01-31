@@ -1,0 +1,313 @@
+/* ============================================
+   SciMath Documentation - Orthogonal Theme
+   ============================================ */
+
+:root {
+  --vp-c-brand: #3b82f6;
+  --vp-c-brand-light: #60a5fa;
+  --vp-c-brand-dark: #2563eb;
+  --sci-accent-neon: #00f2ff;
+  --sci-gradient-brand: linear-gradient(135deg, #3b82f6 0%, #00f2ff 100%);
+  --sci-glass-bg: rgba(255, 255, 255, 0.7);
+  --sci-glass-border: rgba(0, 0, 0, 0.08);
+  --sci-surface-1: #ffffff;
+  --sci-surface-2: #f8fafc;
+  --sci-surface-3: #f1f5f9;
+  --sci-text-primary: #0f172a;
+  --sci-text-secondary: #475569;
+  --sci-border: #e2e8f0;
+  --sci-code-bg: #f8fafc;
+  --sci-layout-max-width: 1440px;
+  --sci-layout-padding: 40px;
+  --vp-nav-max-width: var(--sci-layout-max-width) !important;
+  --vp-layout-max-width: var(--sci-layout-max-width) !important;
+  --vp-nav-pad-left: var(--sci-layout-padding) !important;
+  --vp-nav-pad-right: var(--sci-layout-padding) !important;
+  --math-bg-color: rgba(59, 130, 246, 0.08); /* Aumentado de 0.03 */
+  --math-accent-color: rgba(0, 242, 255, 0.4); /* Aumentado de 0.1 y más brillante */
+}
+
+.dark {
+  --vp-c-brand: #60a5fa;
+  --sci-glass-bg: rgba(10, 15, 28, 0.8);
+  --sci-glass-border: rgba(255, 255, 255, 0.05);
+  --sci-surface-1: #05080f;
+  --sci-surface-2: #0a0f1c;
+  --sci-surface-3: #12192b;
+  --sci-text-primary: #f1f5f9;
+  --sci-text-secondary: #94a3b8;
+  --sci-border: #1e293b;
+  --sci-code-bg: #0a0f1c;
+  --math-bg-color: rgba(96, 165, 250, 0.1);
+  --math-accent-color: rgba(0, 242, 255, 0.5);
+  --vp-c-bg: var(--sci-surface-1);
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  background-color: var(--sci-surface-1);
+}
+
+/* Background image for BOTH light and dark modes */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: url('/sci-math-wasm/math-bg.svg') no-repeat center center;
+  background-size: cover;
+  z-index: -2;
+  /* Removed mask to let the neon shine at full power */
+  opacity: 1;
+  pointer-events: none;
+  animation: bgFloat 30s ease-in-out infinite alternate;
+}
+
+/* Subtle animation for the whole background */
+@keyframes bgFloat {
+  from { transform: scale(1) translateY(0); }
+  to { transform: scale(1.05) translateY(-20px); }
+}
+
+body::before {
+  animation: bgFloat 30s ease-in-out infinite alternate;
+}
+
+@keyframes floatWave {
+  from { transform: translateY(10px) scaleX(1); }
+  to { transform: translateY(-10px) scaleX(1.1); }
+}
+
+.VPNav {
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  background: var(--sci-glass-bg) !important;
+  border-bottom: 1px solid var(--sci-glass-border) !important;
+  width: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 300 !important;
+}
+
+.VPNavBar,
+.VPNavBar .container,
+.VPNavBar .content,
+.VPNavBar .content-body {
+  background: transparent !important;
+}
+
+.VPNavBar .divider {
+  display: none !important;
+}
+
+.VPNavBarTitle .title {
+  font-weight: 800 !important;
+  background: var(--sci-gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transition: opacity 0.2s ease;
+}
+
+.VPNavBarTitle:hover .title {
+  opacity: 0.8;
+}
+
+.VPHero {
+  min-height: 80vh;
+  display: flex !important;
+  align-items: center;
+  animation: heroFloat 8s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+}
+
+@keyframes heroFloat {
+  from { transform: translateY(0); }
+  to { transform: translateY(-10px); }
+}
+
+.VPHero .name {
+  font-size: clamp(3.5rem, 8vw, 5.5rem) !important;
+  font-weight: 900 !important;
+  background: var(--sci-gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.VPHero .text {
+  font-weight: 700 !important;
+  color: var(--sci-text-primary) !important;
+}
+
+.VPButton.brand {
+  background: var(--sci-gradient-brand) !important;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  border: none !important;
+}
+
+.VPButton.brand:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px rgba(0, 242, 255, 0.4);
+}
+
+.VPFeature {
+  background: var(--sci-glass-bg) !important;
+  border: 1px solid var(--sci-glass-border) !important;
+  border-radius: 20px !important;
+  padding: 32px !important;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  backdrop-filter: blur(10px);
+  height: 100%;
+}
+
+.VPFeature:hover {
+  transform: translateY(-8px);
+  border-color: var(--vp-c-brand) !important;
+  box-shadow: 0 20px 40px rgba(59, 130, 246, 0.15);
+}
+
+.VPSidebar {
+  background: var(--sci-surface-1) !important;
+  border-right: 1px solid var(--sci-border) !important;
+  backdrop-filter: blur(10px);
+}
+
+.dark .VPSidebar {
+  background: rgba(10, 15, 28, 0.7) !important;
+}
+
+.VPHome .vp-doc {
+  padding: 0 var(--sci-layout-padding) !important;
+  max-width: var(--sci-layout-max-width) !important;
+  margin: 0 auto !important;
+}
+
+.vp-doc h1 {
+  font-size: 2.8rem !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.04em;
+  background: var(--sci-gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 2rem;
+}
+
+.vp-doc h2 {
+  border-bottom: 1px solid var(--sci-border);
+  font-weight: 700 !important;
+  padding-bottom: 0.5rem;
+}
+
+.vp-doc div[class*='language-'] {
+  border-radius: 12px !important;
+  border: 1px solid var(--sci-border) !important;
+  background: var(--sci-code-bg) !important;
+}
+
+.vp-doc table {
+  border-radius: 8px;
+  border: 1px solid var(--sci-border);
+  background: var(--sci-surface-2);
+  width: 100%;
+}
+
+.vp-doc th {
+  background: var(--sci-surface-3) !important;
+  color: var(--sci-text-primary);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.VPSidebar {
+  background: var(--sci-surface-2) !important;
+  border-right: 1px solid var(--sci-border) !important;
+}
+
+.VPSidebarItem.is-active .text {
+  color: var(--vp-c-brand) !important;
+  font-weight: 600 !important;
+}
+
+::selection {
+  background: rgba(0, 242, 255, 0.2);
+}
+
+
+
+/* KaTeX / MathML Strategy */
+/* We rely on Native MathML because the user's browser renders it correctly,
+   while the HTML fallback is failing due to version mismatches. */
+
+/* Hide the HTML fallback (which looks linear/broken) */
+.katex-html {
+  display: none;
+}
+
+/* Inline MathML (Default) */
+.katex-mathml {
+  position: static;
+  clip: auto;
+  border: 0;
+  height: auto;
+  width: auto;
+  overflow: visible;
+  display: inline; /* Keep inline flow */
+  white-space: nowrap;
+}
+
+
+/* Minimal styling for block math container */
+.katex-display {
+  display: block;
+  margin: 2rem auto !important;
+  padding: 1.5rem;
+  background: var(--math-bg-color);
+  border: 1px solid var(--sci-border);
+  border-radius: 12px;
+  text-align: center;
+  overflow-x: auto;
+  font-size: 1.5em; 
+  width: 100%;
+  box-sizing: border-box;
+  line-height: normal;
+}
+
+/* Block MathML (Inside .katex-display) */
+.katex-display .katex-mathml {
+  display: block;
+  text-align: center;
+  width: 100%;
+}
+
+/* Fix Fraction Spacing in Native MathML */
+/* Adds breathing room between the fraction bar and terms */
+math mfrac > *:first-child {
+  padding-bottom: 4px !important; /* Space below numerator */
+}
+
+math mfrac > *:last-child {
+  padding-top: 4px !important; /* Space above denominator */
+}
+
+/* Ensure white text in dark mode */
+.dark .katex {
+  color: #e2e8f0;
+}
+
+/* Fix generic table conflict */
+.vp-doc table {
+  display: table;
+  width: 100%;
+}
+
+.katex table {
+  width: auto !important;
+  display: table !important;
+  margin: 0 auto !important;
+}
+
+.katex tr, .katex td {
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}

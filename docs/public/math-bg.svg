@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 800" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- Punchy Neon Gradients -->
+    <linearGradient id="cyberGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00f2ff; stop-opacity:0.8"/>
+      <stop offset="100%" style="stop-color:#bd34fe; stop-opacity:0.8"/>
+    </linearGradient>
+    <linearGradient id="deepVoid" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a; stop-opacity:0"/>
+      <stop offset="100%" style="stop-color:#0f172a; stop-opacity:1"/>
+    </linearGradient>
+    
+    <!-- Intense Glow Filter -->
+    <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feFlood flood-color="#00f2ff" flood-opacity="0.5" result="glowColor"/>
+      <feComposite in="glowColor" in2="coloredBlur" operator="in" result="softGlow"/>
+      <feMerge>
+        <feMergeNode in="softGlow"/>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Pattern for the grid -->
+    <pattern id="hexGrid" width="100" height="173.2" patternUnits="userSpaceOnUse">
+      <path d="M50 0 L100 25 L100 75 L50 100 L0 75 L0 25 Z" fill="none" stroke="rgba(59, 130, 246, 0.1)" stroke-width="2"/>
+    </pattern>
+  </defs>
+
+  <style>
+    /* Smooth Continuous Rotation without jumps */
+    @keyframes orbit {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Reverse Rotation */
+    @keyframes orbitRev {
+      from { transform: rotate(360deg); }
+      to { transform: rotate(0deg); }
+    }
+    
+    /* Gentle Breathing Scale - perfectly looped */
+    @keyframes breathe {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    
+    /* Data Pulse shooting across with fade out to hide reset */
+    @keyframes shoot {
+      0% { stroke-dashoffset: 2000; opacity: 0; }
+      10% { opacity: 1; }
+      80% { opacity: 1; }
+      100% { stroke-dashoffset: 0; opacity: 0; }
+    }
+
+    /* Floating Math Symbols - smooth vertical oscillation */
+    @keyframes floatScales {
+      0%, 100% { transform: translateY(0) scale(1); opacity: 0.15; }
+      50% { transform: translateY(-20px) scale(1.1); opacity: 0.4; }
+    }
+
+    /* Ensure transforms happen from center of elements */
+    .chaos-container { transform-origin: center; animation: breathe 10s ease-in-out infinite; }
+    .chaos-ring { transform-origin: center; transform-box: fill-box; }
+    
+    .pulse-line { 
+      stroke-dasharray: 300 1700; 
+      stroke-linecap: round;
+      animation: shoot 6s linear infinite; 
+    }
+    
+    .symbol { 
+      animation: floatScales 8s ease-in-out infinite; 
+      font-family: monospace; 
+      font-weight: bold; 
+      transform-origin: center;
+      transform-box: fill-box;
+    }
+  </style>
+
+  <!-- Background Hex Grid -->
+  <rect width="100%" height="100%" fill="url(#hexGrid)" opacity="0.4"/>
+
+  <!-- Main "Attractor" Geometry -->
+  <!-- We move rotation to inner elements and scaling to container to avoid conflict -->
+  <g transform="translate(720, 400)" class="chaos-container" filter="url(#neonGlow)">
+    <!-- Concentric Rings -->
+    <circle r="150" fill="none" stroke="url(#cyberGrad)" stroke-width="2" class="chaos-ring" style="animation: orbitRev 25s linear infinite; stroke-dasharray: 20 10; opacity: 0.8"/>
+    <circle r="220" fill="none" stroke="#00f2ff" stroke-width="1.5" class="chaos-ring" style="animation: orbit 35s linear infinite; stroke-dasharray: 50 30; opacity: 0.5"/>
+    <circle r="300" fill="none" stroke="#bd34fe" stroke-width="1" class="chaos-ring" style="animation: orbitRev 50s linear infinite; stroke-dasharray: 100 50; opacity: 0.3"/>
+    
+    <!-- Central Core -->
+    <path d="M0 -80 L70 40 L-70 40 Z" fill="none" stroke="#00f2ff" stroke-width="4" class="chaos-ring" style="animation: orbit 15s linear infinite"/>
+  </g>
+
+  <!-- Dynamic Data Streams (Bezier curves across screen) -->
+  <path d="M-100,600 C300,500 600,800 1540,200" fill="none" stroke="url(#cyberGrad)" stroke-width="3" class="pulse-line" style="animation-delay: 0s" filter="url(#neonGlow)"/>
+  <path d="M-100,200 C400,100 800,900 1540,500" fill="none" stroke="#bd34fe" stroke-width="2" class="pulse-line" style="animation-delay: 2s; stroke-opacity: 0.6" filter="url(#neonGlow)"/>
+  <path d="M-100,400 C300,400 600,400 1540,400" fill="none" stroke="#3b82f6" stroke-width="1" class="pulse-line" style="animation-delay: 1s; stroke-opacity: 0.4"/>
+
+  <!-- Large Disruptive Math Symbols -->
+  <g fill="#00f2ff" font-size="120" opacity="0.1">
+    <text x="100" y="200" class="symbol" style="animation-delay: 1s">∫</text>
+    <text x="1200" y="700" class="symbol" style="animation-delay: 3s">∂</text>
+    <text x="1300" y="200" class="symbol" style="animation-delay: 5s">∇</text>
+    <text x="50" y="700" class="symbol" style="animation-delay: 0s">∑</text>
+  </g>
+
+  <!-- Fade out at bottom for text readability -->
+
+</svg>
