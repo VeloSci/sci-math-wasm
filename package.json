@@ -1,0 +1,17 @@
+{
+  "name": "sci-math-wasm",
+  "version": "0.1.0",
+  "description": "High-performance scientific mathematical functions for WebAssembly",
+  "type": "module",
+  "scripts": {
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  },
+  "devDependencies": {
+    "@types/node": "^25.1.0",
+    "katex": "^0.16.28",
+    "markdown-it-katex": "^2.0.3",
+    "vitepress": "^1.0.0-rc.31"
+  }
+}
