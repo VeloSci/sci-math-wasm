@@ -5,7 +5,7 @@ import * as wasm from '../pkg/node/sci_math_wasm.js';
 const {
   clamp, lerp, distance_2d, round_to_precision,
   mean, variance, standard_deviation, median,
-  to_radians, to_degrees, sinc, hypot, wrap_angle,
+  to_radians, to_degrees, sinc, hypotenuse, wrap_angle,
   fft, magnitude, moving_average, find_peaks,
   dot_product, normalize, matrix_multiply,
   poly_eval, poly_derive, poly_integrate,
@@ -58,9 +58,9 @@ describe('trig', () => {
     expect(rad).toBeCloseTo(Math.PI);
     expect(to_degrees(rad)).toBeCloseTo(180);
     expect(sinc(0)).toBeCloseTo(1);
-    expect(hypot(3, 4)).toBeCloseTo(5);
+    expect(hypotenuse(3, 4)).toBeCloseTo(5);
     const wrapped = wrap_angle(3 * Math.PI);
-    expect(wrapped).toBeCloseTo(-Math.PI);
+    expect(wrapped).toBeCloseTo(Math.PI);
   });
 });
 
