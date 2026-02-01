@@ -23,6 +23,9 @@ wasm-bindgen-rayon = { version = "1.2.1", optional = true }
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "0.3"
 
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
 [dev-dependencies]
 
 [features]
