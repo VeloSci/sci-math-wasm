@@ -1,6 +1,16 @@
+import { getWasmProvider } from './wasm-provider';
 import { solveLinearSystem } from './linalg';
 
 export function fitLinear(x: number[] | Float64Array, y: number[] | Float64Array): [number, number, number] {
+    const wasm = getWasmProvider();
+    if (wasm && wasm.linearRegression) {
+        const res = wasm.linearRegression(x, y);
+        const result: [number, number, number] = [res.slope, res.intercept, res.rSquared];
+        if (res.free) res.free();
+        return result;
+    }
+    
+    // JS Implementation
     const n = x.length;
     let sx = 0, sy = 0, sxy = 0, sxx = 0;
     for (let i = 0; i < n; i++) {
@@ -19,6 +29,7 @@ export function fitLinear(x: number[] | Float64Array, y: number[] | Float64Array
 }
 
 export function fitPolynomial(x: number[] | Float64Array, y: number[] | Float64Array, order: number): Float64Array | null {
+    // Polynomial fitting is usually best handled in JS by delegating the linalg part to WASM
     const n = order + 1;
     const powers = new Float64Array(2 * order + 1);
     const b = new Float64Array(n);
