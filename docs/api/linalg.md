@@ -1,58 +1,83 @@
 # Linear Algebra
 
-Vector and Matrix operations optimized for continuous memory layouts.
+Core operations for vector and matrix calculations via `SciMathJS`.
+
+## Usage
+
+```typescript
+import { SciMathJS } from '@velo-sci/sci-math-wasm';
+
+const a = new Float64Array([1, 2, 3]);
+const b = new Float64Array([4, 5, 6]);
+const dot = SciMathJS.dotProduct(a, b);
+```
 
 ## API Reference
 
-### `dot_product`
-Calculates the scalar product of two vectors.
+### `dotProduct`
+Calculates the dot product of two equal-length vectors.
 
 **Formula:**
-$$ \mathbf{a} \cdot \mathbf{b} = \sum_{i=1}^{n} a_i b_i $$
+$$ A \cdot B = \sum_{i=1}^{n} a_i b_i $$
 
 **Signature:**
 ```typescript
-function dot_product(a: Float64Array, b: Float64Array): number
+function dotProduct(a: Float64Array | number[], b: Float64Array | number[]): number
 ```
 
 ---
 
 ### `normalize`
-Returns the unit vector direction of the input vector.
+Normalizes a vector to unit length (L2 norm).
 
 **Formula:**
-$$ \mathbf{\hat{V}} = \frac{\mathbf{V}}{\|\mathbf{V}\|} $$
+$$ \hat{V} = \frac{V}{||V||} $$
 
 **Signature:**
 ```typescript
-function normalize(v: Float64Array): Float64Array
+function normalize(data: Float64Array | number[]): Float64Array
 ```
 
 ---
 
-### `matrix_multiply`
-Multiplies two matrices stored as flat arrays (row-major).
-
-**Formula:**
-$$ C_{ij} = \sum_{k=1}^{n} A_{ik} B_{kj} $$
+### `matrixMultiply`
+Multiplies two matrices represented as flat arrays.
 
 **Signature:**
 ```typescript
-function matrix_multiply(
-  a: Float64Array, 
-  rows_a: number, 
-  cols_a: number, 
-  b: Float64Array, 
-  rows_b: number, 
-  cols_b: number
+function matrixMultiply(
+  a: Float64Array | number[], rowsA: number, colsA: number,
+  b: Float64Array | number[], rowsB: number, colsB: number
 ): Float64Array
 ```
 
-**Example:**
+---
+
+### `transpose`
+Transposes a matrix (flips it over its diagonal).
+
+**Signature:**
 ```typescript
-// Multiply 2x2 Identity by 2x2 Matrix
-const A = new Float64Array([1, 0, 0, 1]);
-const B = new Float64Array([1, 2, 3, 4]);
-const C = matrix_multiply(A, 2, 2, B, 2, 2);
-// C => [1, 2, 3, 4]
+function transpose(data: Float64Array | number[], rows: number, cols: number): Float64Array
+```
+
+---
+
+### `solveLinearSystem`
+Solves a linear system $Ax = B$ using Gaussian elimination with partial pivoting. High-performance implementation that uses WASM parallel recursion when possible.
+
+**Signature:**
+```typescript
+function solveLinearSystem(a: Float64Array | number[], b: Float64Array | number[], n: number): Float64Array
+```
+
+---
+
+### `invert2x2` / `invert3x3`
+Inverts small matrices directly for high performance.
+
+**Signature:**
+```typescript
+function invert2x2(m: Float64Array | number[]): Float64Array
+function invert3x3(m: Float64Array | number[]): Float64Array
 ```
