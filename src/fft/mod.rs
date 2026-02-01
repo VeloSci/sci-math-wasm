@@ -127,3 +127,49 @@ pub fn rfft_radix2(data: &[f64], re_out: &mut [f64], im_out: &mut [f64]) {
     fft_radix2(&mut re_out[..half_n], &mut im_out[..half_n], false);
 }
 
+use wasm_bindgen::prelude::*;
+
+#[wasm_bindgen(js_name = ifft)]
+pub fn ifft_wasm(re: Vec<f64>, im: Vec<f64>) -> Result<Vec<f64>, JsValue> {
+    let n = re.len();
+    if n != im.len() {
+        return Err(JsValue::from_str("Real and imaginary parts must have the same length"));
+    }
+    if !n.is_power_of_two() {
+        return Err(JsValue::from_str("Length must be a power of two"));
+    }
+
+    let mut re_mut = re;
+    let mut im_mut = im;
+    ifft_radix2(&mut re_mut, &mut im_mut);
+
+    let mut output = Vec::with_capacity(n * 2);
+    for i in 0..n {
+        output.push(re_mut[i]);
+        output.push(im_mut[i]);
+    }
+
+    Ok(output)
+}
+
+#[wasm_bindgen(js_name = rfft)]
+pub fn rfft_wasm(data: &[f64]) -> Result<Vec<f64>, JsValue> {
+    let n = data.len();
+    if !n.is_power_of_two() {
+        return Err(JsValue::from_str("Input length must be a power of two"));
+    }
+    let half_n = n / 2;
+    let mut re_out = vec![0.0; half_n];
+    let mut im_out = vec![0.0; half_n];
+    
+    rfft_radix2(data, &mut re_out, &mut im_out);
+
+    let mut output = Vec::with_capacity(n);
+    for i in 0..half_n {
+        output.push(re_out[i]);
+        output.push(im_out[i]);
+    }
+
+    Ok(output)
+}
+
