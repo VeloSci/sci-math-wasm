@@ -39,15 +39,13 @@ describe('Cross-Validation: WASM vs JS', () => {
     it('should match Linear Algebra: Dot Product & Normalize', () => {
         const a = new Float64Array([1, 2, 3]);
         const b = new Float64Array([4, 5, 6]);
-        assertNear(SciMathJS.dotProduct(a, b), wasm.dot_product(a, b));
+        assertNear(SciMathJS.dotProduct(a, b), wasm.dotProduct(a, b));
         assertNear(SciMathJS.normalize(a), wasm.normalize(a));
     });
 
     it('should match Signal: Moving Average & SNR', () => {
         const data = new Float64Array([1, 2, 1, 2, 1, 10, 1, 2, 1]);
-        assertNear(SciMathJS.movingAverage(data, 3), wasm.moving_average(data, 3));
-        
-        // SNR is currently engine-only, we can add it to top-level if needed or skip for now
+        assertNear(SciMathJS.movingAverage(data, 3), wasm.movingAverage(data, 3));
     });
 
     it('should match FFT', () => {
@@ -68,7 +66,7 @@ describe('Cross-Validation: WASM vs JS', () => {
     it('should match Linear Regression', () => {
         const x = new Float64Array([0, 1, 2, 3]);
         const y = new Float64Array([1, 2, 3, 4]);
-        const wasmRes = wasm.linear_regression(x, y);
+        const wasmRes = wasm.linearRegression(x, y);
         const jsRes = SciMathJS.fitLinear(x, y);
         assertNear(jsRes[0], wasmRes.slope);
         assertNear(jsRes[1], wasmRes.intercept);
