@@ -1,4 +1,10 @@
+import { getWasmProvider } from './wasm-provider';
+
 export function diff5Pt(data: Float64Array | number[], h: number): Float64Array {
+    const wasm = getWasmProvider();
+    if (wasm && wasm.diff5Pt) return wasm.diff5Pt(data, h);
+    
+    // JS Implementation
     const n = data.length;
     const out = new Float64Array(n);
     if (n < 5) return out;
@@ -14,6 +20,10 @@ export function diff5Pt(data: Float64Array | number[], h: number): Float64Array 
 }
 
 export function integrateSimpson(data: Float64Array | number[], h: number): number {
+    const wasm = getWasmProvider();
+    if (wasm && wasm.integrateSimpson) return wasm.integrateSimpson(data, h);
+    
+    // JS Implementation
     const n = data.length;
     if (n < 3) return 0;
     let sum = data[0] + data[n - 1];
@@ -24,6 +34,10 @@ export function integrateSimpson(data: Float64Array | number[], h: number): numb
 }
 
 export function smoothSG(data: Float64Array | number[], window: number): Float64Array {
+    const wasm = getWasmProvider();
+    if (wasm && wasm.smoothSG) return wasm.smoothSG(data, window);
+    
+    // JS Implementation
     const n = data.length, out = new Float64Array(data);
     if (n < window) return out;
     const half = Math.floor(window / 2);
