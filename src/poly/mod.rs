@@ -53,3 +53,29 @@ pub fn poly_integrate(coeffs: &[f64], c: f64) -> Vec<f64> {
     }
     integrated
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_poly_eval_horner() {
+        let coeffs = [1.0, 0.0, 2.0]; // 2x^2 + 1
+        let val = poly_eval(&coeffs, 2.0);
+        assert_eq!(val, 9.0);
+    }
+
+    #[test]
+    fn test_poly_derive() {
+        let coeffs = [1.0, 2.0, 3.0]; // 3x^2 + 2x + 1
+        let d = poly_derive(&coeffs);
+        assert_eq!(d, vec![2.0, 6.0]); // 6x + 2
+    }
+
+    #[test]
+    fn test_poly_integrate_with_constant() {
+        let coeffs = [1.0, 2.0]; // 2x + 1
+        let integrated = poly_integrate(&coeffs, 5.0);
+        assert_eq!(integrated, vec![5.0, 1.0, 1.0]);
+    }
+}
