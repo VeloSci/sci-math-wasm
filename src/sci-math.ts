@@ -1,4 +1,5 @@
 import * as basic from './js-mirror/basic';
+import * as analysis from './js-mirror/analysis';
 import * as stats from './js-mirror/stats';
 import * as linalg from './js-mirror/linalg';
 import * as signal from './js-mirror/signal';
@@ -14,6 +15,7 @@ import { SciEngineJS } from './js-mirror/engine';
  */
 export const SciMathJS = {
   ...basic,
+  ...analysis,
   ...stats,
   ...linalg,
   ...signal,
@@ -25,4 +27,4 @@ export const SciMathJS = {
 };
 
 // Export individual modules as well
-export { basic, stats, linalg, signal, fitting, poly, calculus, Complex, SciEngineJS };
+export { basic, analysis, stats, linalg, signal, fitting, poly, calculus, Complex, SciEngineJS };
