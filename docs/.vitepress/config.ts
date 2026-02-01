@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitepress'
 import markdownItKatex from 'markdown-it-katex'
+import wasm from 'vite-plugin-wasm'
 
 export default defineConfig({
   title: 'SciMath WASM',
@@ -15,6 +16,10 @@ export default defineConfig({
     }
   },
   vite: {
+    plugins: [
+      wasm()
+    ],
+
     resolve: {
       preserveSymlinks: true
     },
