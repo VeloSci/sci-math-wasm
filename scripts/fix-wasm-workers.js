@@ -14,9 +14,27 @@ if (fs.existsSync(PKG_WEB_SNIPPETS)) {
     console.log(`🔍 Found rayon snippets: ${rayonDirs.join(', ')}`);
     
     for (const dir of rayonDirs) {
-        const workerFile = path.join(PKG_WEB_SNIPPETS, dir, 'src', 'workerHelpers.worker.js');
+        const rayonDirPath = path.join(PKG_WEB_SNIPPETS, dir);
         
-        if (fs.existsSync(workerFile)) {
+        // Recursive function to find the worker file
+        const findWorkerFile = (dirPath) => {
+             const files = fs.readdirSync(dirPath);
+             for (const file of files) {
+                 const fullPath = path.join(dirPath, file);
+                 const stat = fs.statSync(fullPath);
+                 if (stat.isDirectory()) {
+                     const found = findWorkerFile(fullPath);
+                     if (found) return found;
+                 } else if (file === 'workerHelpers.worker.js') {
+                     return fullPath;
+                 }
+             }
+             return null;
+        };
+
+        const workerFile = findWorkerFile(rayonDirPath);
+        
+        if (workerFile) {
             let content = fs.readFileSync(workerFile, 'utf8');
             
             // Fix deprecation: initWbg(module, memory) -> initWbg({ module_or_path: module, memory })
@@ -31,7 +49,7 @@ if (fs.existsSync(PKG_WEB_SNIPPETS)) {
                 console.log(`ℹ️ Already patched or pattern not found: ${workerFile}`);
             }
         } else {
-            console.error(`❌ ERROR: Worker file not found: ${workerFile}`);
+            console.error(`❌ ERROR: workerHelpers.worker.js not found in ${rayonDirPath}`);
             process.exit(1);
         }
     }
