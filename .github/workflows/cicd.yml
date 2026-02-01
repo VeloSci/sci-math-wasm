@@ -46,10 +46,8 @@ jobs:
         env:
           RUSTFLAGS: "-C target-feature=+atomics,+bulk-memory,+mutable-globals"
 
-      # - name: Run JS/WASM Tests
-      #   run: pnpm test
-      #   env:
-      #     RUSTFLAGS: "-C target-feature=+atomics,+bulk-memory,+mutable-globals"
+      - name: Fix WASM Workers
+        run: node scripts/fix-wasm-workers.js
 
       - name: Build Docs
         if: github.ref == 'refs/heads/main'

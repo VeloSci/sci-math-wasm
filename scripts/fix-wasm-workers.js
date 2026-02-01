@@ -5,6 +5,12 @@ const PKG_WEB_SNIPPETS = 'pkg/web/snippets';
 
 if (fs.existsSync(PKG_WEB_SNIPPETS)) {
     const rayonDirs = fs.readdirSync(PKG_WEB_SNIPPETS).filter(d => d.startsWith('wasm-bindgen-rayon'));
+    
+    if (rayonDirs.length === 0) {
+        console.error('❌ ERROR: No rayon snippets found in pkg/web/snippets. WASM build might be incomplete.');
+        process.exit(1);
+    }
+    
     console.log(`🔍 Found rayon snippets: ${rayonDirs.join(', ')}`);
     
     for (const dir of rayonDirs) {
@@ -24,8 +30,13 @@ if (fs.existsSync(PKG_WEB_SNIPPETS)) {
             } else {
                 console.log(`ℹ️ Already patched or pattern not found: ${workerFile}`);
             }
+        } else {
+            console.error(`❌ ERROR: Worker file not found: ${workerFile}`);
+            process.exit(1);
         }
     }
 } else {
-    console.log('No web snippets directory found. Skipping worker helper fix.');
+    console.error(`❌ ERROR: Web snippets directory not found: ${PKG_WEB_SNIPPETS}`);
+    console.error('Make sure "wasm:build:web" was run successfully.');
+    process.exit(1);
 }

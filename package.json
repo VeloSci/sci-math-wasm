@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "docs:dev": "vitepress dev docs",
-    "docs:build": "vitepress build docs",
+    "docs:build": "node scripts/fix-wasm-workers.js && vitepress build docs",
     "docs:preview": "vitepress preview docs",
     "wasm:build:node": "wasm-pack build --target nodejs --out-dir pkg/node --release -- --features threads,console_error_panic_hook",
     "wasm:build:web": "wasm-pack build --target web --out-dir pkg/web --release -- --features wasm-threads && node scripts/fix-wasm-workers.js",
