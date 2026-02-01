@@ -4,10 +4,17 @@ const path = require('path');
 const pkgPath = path.join(__dirname, '../pkg/node/package.json');
 if (fs.existsSync(pkgPath)) {
     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-    pkg.name = '@velo-sci/sci-math-wasm';
+    pkg.name = '@VeloSci/sci-math-wasm';
     pkg.type = 'module';
+    pkg.repository = {
+        type: 'git',
+        url: 'git+https://github.com/VeloSci/sci-math-wasm.git'
+    };
+    pkg.publishConfig = {
+        registry: 'https://npm.pkg.github.com'
+    };
     fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
-    console.log('Set pkg/node/package.json name to @velo-sci/sci-math-wasm and type to module');
+    console.log('Updated pkg/node/package.json: name=@VeloSci/sci-math-wasm, type=module, registry=https://npm.pkg.github.com');
 } else {
     console.warn('pkg/node/package.json not found');
 }
