@@ -2,7 +2,18 @@
 
 use wasm_bindgen::prelude::*;
 use std::collections::HashMap;
+
+#[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
 use core::arch::wasm32::*;
+
+#[cfg(not(all(target_arch = "wasm32", target_feature = "simd128")))]
+mod wasm_simd_stubs {
+    #[allow(non_camel_case_types)]
+    pub type v128 = i128;
+}
+#[cfg(not(all(target_arch = "wasm32", target_feature = "simd128")))]
+use wasm_simd_stubs::*;
+
 use rayon::prelude::*;
 
 #[wasm_bindgen]
@@ -58,6 +69,9 @@ impl SciEngine {
         let vy_addr = self.vectors_f32.get_mut(&id_vy).unwrap().as_mut_ptr() as usize;
         let vz_addr = self.vectors_f32.get_mut(&id_vz).unwrap().as_mut_ptr() as usize;
 
+        if n < 4 { return; } // Avoid complexity for small n
+
+        #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
         unsafe {
             let v_soft = f32x4_splat(1e-5);
             let v_one = f32x4_splat(1.0);
@@ -88,6 +102,26 @@ impl SciEngine {
                         *vx.add(i) += dx * id3 * dt; *vy.add(i) += dy * id3 * dt; *vz.add(i) += dz * id3 * dt;
                     }
                     *vx.add(i) += fx_s * dt; *vy.add(i) += fy_s * dt; *vz.add(i) += fz_s * dt;
+                });
+            }
+        }
+
+        #[cfg(any(not(target_arch = "wasm32"), not(target_feature = "simd128")))]
+        {
+            // Scalar fallback for host testing
+            for _ in 0..iters {
+                (0..n).into_par_iter().for_each(move |i| unsafe {
+                    let px = px_addr as *const f32; let py = py_addr as *const f32; let pz = pz_addr as *const f32;
+                    let vx = vx_addr as *mut f32; let vy = vy_addr as *mut f32; let vz = vz_addr as *mut f32;
+                    let pxi = *px.add(i); let pyi = *py.add(i); let pzi = *pz.add(i);
+                    let mut fx = 0.0; let mut fy = 0.0; let mut fz = 0.0;
+                    for j in 0..n {
+                        let dx = *px.add(j) - pxi; let dy = *py.add(j) - pyi; let dz = *pz.add(j) - pzi;
+                        let d2 = dx*dx + dy*dy + dz*dz + 1e-9;
+                        let inv_dist3 = 1.0 / (d2.sqrt() * d2);
+                        fx += dx * inv_dist3; fy += dy * inv_dist3; fz += dz * inv_dist3;
+                    }
+                    *vx.add(i) += fx * dt; *vy.add(i) += fy * dt; *vz.add(i) += fz * dt;
                 });
             }
         }

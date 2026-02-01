@@ -39,7 +39,7 @@ jobs:
         run: pnpm install
 
       - name: Run Cargo Tests
-        run: cargo test
+        run: cargo test --features threads
 
       - name: Build WASM
         run: pnpm wasm:build

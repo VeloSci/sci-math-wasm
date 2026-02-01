@@ -24,13 +24,13 @@ pub mod fitting;
 use wasm_bindgen::prelude::*;
 use js_sys::Promise;
 
-#[cfg(all(feature = "threads", target_arch = "wasm32"))]
+#[cfg(all(feature = "wasm-threads", target_arch = "wasm32"))]
 #[wasm_bindgen]
 pub fn init_threads(n: usize) -> Promise {
     wasm_bindgen_rayon::init_thread_pool(n)
 }
 
-#[cfg(any(not(feature = "threads"), not(target_arch = "wasm32")))]
+#[cfg(any(not(feature = "wasm-threads"), not(target_arch = "wasm32")))]
 #[wasm_bindgen]
 pub fn init_threads(_n: usize) -> Promise {
     Promise::resolve(&JsValue::from_str("threads not supported on this platform/configuration"))
