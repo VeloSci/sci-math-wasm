@@ -1,4 +1,17 @@
 use rayon::prelude::*;
+use wasm_bindgen::prelude::*;
+
+#[wasm_bindgen(js_name = diff5Pt)]
+pub fn numerical_diff(data: &[f64], h: f64) -> Vec<f64> {
+    let mut out = vec![0.0; data.len()];
+    diff_5pt_stencil(data, h, &mut out);
+    out
+}
+
+#[wasm_bindgen(js_name = integrateSimpson)]
+pub fn numerical_integrate(data: &[f64], h: f64) -> f64 {
+    integrate_simpson(data, h)
+}
 
 /// Numerical Differentiation using 5-point Stencil (Central Difference) - Parallel
 pub fn diff_5pt_stencil(data: &[f64], h: f64, out: &mut [f64]) {
@@ -92,4 +105,3 @@ fn adaptive_simpson_recursive(
         adaptive_simpson_recursive(f, c, b, tol / 2.0, fc, fb, fe, right, depth + 1, total);
     }
 }
-
