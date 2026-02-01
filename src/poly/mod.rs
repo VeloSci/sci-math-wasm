@@ -15,7 +15,7 @@ use wasm_bindgen::prelude::*;
 /// 
 /// # Complexity
 /// $O(n)$ where $n$ is the degree.
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = polyEval)]
 pub fn poly_eval(coeffs: &[f64], x: f64) -> f64 {
     if coeffs.is_empty() {
         return 0.0;
@@ -30,7 +30,7 @@ pub fn poly_eval(coeffs: &[f64], x: f64) -> f64 {
 /// 
 /// # Returns
 /// New coefficients for the derived polynomial.
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = polyDerive)]
 pub fn poly_derive(coeffs: &[f64]) -> Vec<f64> {
     if coeffs.len() <= 1 {
         return vec![0.0];
@@ -45,7 +45,7 @@ pub fn poly_derive(coeffs: &[f64]) -> Vec<f64> {
 /// # Arguments
 /// * `coeffs` - Original coefficients.
 /// * `c` - Integration constant.
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = polyIntegrate)]
 pub fn poly_integrate(coeffs: &[f64], c: f64) -> Vec<f64> {
     let mut integrated = vec![c];
     for (i, &val) in coeffs.iter().enumerate() {
