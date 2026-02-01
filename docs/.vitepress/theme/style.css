@@ -146,9 +146,36 @@ body::after {
   -webkit-text-fill-color: transparent;
 }
 
-/* KaTeX / MathML Strategy */
-.katex-html { display: none; }
+/* KaTeX / MathML / MathJax Strategy */
+/* Show MathML (User preferred renderer) */
+.katex-mathml { display: block !important; }
+
+/* Hide HTML (The "bad" one) */
+.katex-html { display: none !important; }
+
+/* General Math Formula Styling - All formulas */
+mjx-container, .MathJax, .katex, .katex-display {
+  margin-block: 5px !important;
+  font-size: calc(100% + 4px) !important; /* User requested +4px */
+}
+
+/* KaTeX Fraction Denominator Spacing */
+.katex .mfrac .vlist-t2 {
+  margin-top: 4px !important; /* Separate denominator from line */
+}
+
+/* Block Math: Centered & width-aware (Not inserted in text) */
+mjx-container[display="true"], 
+.MathJax[display="true"], 
 .katex-display {
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+  margin-inline: auto !important;
+  max-width: 100%;
+  overflow-x: auto;
+  
+  /* Retain existing block styles if desired, but centering is priority */
   background: var(--math-bg-color);
   border: 1px solid var(--sci-border);
   border-radius: 12px;
