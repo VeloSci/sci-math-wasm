@@ -8,7 +8,7 @@ use std::f64::consts::PI;
 /// Converts degrees to radians.
 /// 
 /// $$ \text{rad} = \text{deg} \cdot \frac{\pi}{180} $$
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = toRadians)]
 pub fn to_radians(degrees: f64) -> f64 {
     degrees * PI / 180.0
 }
@@ -16,7 +16,7 @@ pub fn to_radians(degrees: f64) -> f64 {
 /// Converts radians to degrees.
 /// 
 /// $$ \text{deg} = \text{rad} \cdot \frac{180}{\pi} $$
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = toDegrees)]
 pub fn to_degrees(radians: f64) -> f64 {
     radians * 180.0 / PI
 }
@@ -26,7 +26,7 @@ pub fn to_degrees(radians: f64) -> f64 {
 /// $$ \text{sinc}(x) = \frac{\sin(\pi x)}{\pi x} $$
 /// 
 /// Returns 1.0 when $x = 0$.
-#[wasm_bindgen]
+#[wasm_bindgen] // sinc is already single word, but wasm-pack converts to sinc. Fine.
 pub fn sinc(x: f64) -> f64 {
     if x == 0.0 {
         1.0
@@ -39,16 +39,19 @@ pub fn sinc(x: f64) -> f64 {
 /// Calculates the hypotenuse of a right-angled triangle.
 /// 
 /// $$ h = \sqrt{a^2 + b^2} $$
-#[wasm_bindgen]
-pub fn hypot(a: f64, b: f64) -> f64 {
-    a.hypot(b)
+/// Calculates the hypotenuse of a right-angled triangle.
+/// 
+/// $$ h = \sqrt{a^2 + b^2} $$
+#[wasm_bindgen(js_name = hypot)]
+pub fn hypotenuse_wasm(a: f64, b: f64) -> f64 {
+    (a*a + b*b).sqrt()
 }
 
-/// Wraps an angle to the range $[-\pi, \pi]$.
-#[wasm_bindgen]
+/// Wraps an angle to the range $[-\pi, \pi)$.
+#[wasm_bindgen(js_name = wrapAngle)]
 pub fn wrap_angle(angle: f64) -> f64 {
     let mut wrapped = angle % (2.0 * PI);
-    if wrapped > PI {
+    if wrapped >= PI {
         wrapped -= 2.0 * PI;
     } else if wrapped < -PI {
         wrapped += 2.0 * PI;
