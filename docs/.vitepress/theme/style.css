@@ -8,8 +8,12 @@
   --vp-c-brand-dark: #2563eb;
   --sci-accent-neon: #00f2ff;
   --sci-gradient-brand: linear-gradient(135deg, #3b82f6 0%, #00f2ff 100%);
+  
+  /* Glassmorphism - Matched to scichart-engine */
   --sci-glass-bg: rgba(255, 255, 255, 0.7);
   --sci-glass-border: rgba(0, 0, 0, 0.08);
+  --sci-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+
   --sci-surface-1: #ffffff;
   --sci-surface-2: #f8fafc;
   --sci-surface-3: #f1f5f9;
@@ -29,8 +33,12 @@
 
 .dark {
   --vp-c-brand: #60a5fa;
-  --sci-glass-bg: rgba(10, 15, 28, 0.8);
-  --sci-glass-border: rgba(255, 255, 255, 0.05);
+  
+  /* Glassmorphism - Matched to scichart-engine */
+  --sci-glass-bg: rgba(15, 20, 30, 0.75);
+  --sci-glass-border: rgba(255, 255, 255, 0.08);
+  --sci-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+
   --sci-surface-1: #05080f;
   --sci-surface-2: #0a0f1c;
   --sci-surface-3: #12192b;
@@ -51,6 +59,22 @@ html {
 body, .VPApp, .VPHome, .VPContent, .VPDoc, .VPMain, .VPContent-body {
   background-color: transparent !important;
   background: transparent !important;
+}
+
+/* Force internal containers to be transparent so blur shows through */
+.VPNavBar, .VPNavBar .content, .VPNavBar .content-body, .VPNavBar .container, .VPNavBar .divider,
+.VPSidebar, .VPSidebar .curtain, .VPSidebar .container, .VPSidebar .content,
+.VPHomeHero, .VPHomeFeatures, .VPHomeFeatures .container,
+.VPFooter, .VPLocalNav, .VPLocalNav .content {
+  background-color: transparent !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Ensure doc container inner wrappers also allow blur */
+.VPDoc .container, .VPDoc .content {
+    background-color: transparent !important;
+    background: transparent !important;
 }
 
 body {
@@ -101,6 +125,29 @@ body::after {
   z-index: 100;
 }
 
+.VPSidebar {
+  backdrop-filter: blur(24px) saturate(200%) contrast(110%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%) contrast(110%);
+  background: var(--sci-glass-bg) !important;
+  border-right: 1px solid var(--sci-glass-border) !important;
+  box-shadow: 10px 0 30px rgba(0,0,0,0.1);
+}
+
+/* Fix: Make internal curtains and containers transparent to allow blur to show through */
+.VPSidebar .curtain,
+.VPNavBar,
+.VPNavBar .content,
+.VPNavBar .container,
+.VPNavBar .divider {
+  background-color: transparent !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.dark .VPSidebar {
+  box-shadow: 10px 0 30px rgba(0,0,0,0.4);
+}
+
 .VPNavBar {
   background: transparent !important;
 }
@@ -112,6 +159,23 @@ body::after {
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+/* Glassmorphism for Home Page */
+.VPHome {
+  background: transparent !important;
+}
+
+.VPHomeHero {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: var(--sci-glass-bg) !important;
+  border-bottom: 1px solid var(--sci-glass-border) !important;
+  margin-bottom: 2rem !important;
+  border-radius: 0 0 40px 40px !important;
+}
+
+/* Glassmorphism for Documentation Center */
+/* .VPDoc removed to allow transparency */
 
 .VPNavBarTitle .logo {
   margin-right: 12px;
