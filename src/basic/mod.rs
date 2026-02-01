@@ -54,7 +54,7 @@ pub fn lerp(a: f64, b: f64, t: f64) -> f64 {
 /// # Arguments
 /// * `x1`, `y1` - Coordinates of the first point.
 /// * `x2`, `y2` - Coordinates of the second point.
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = distance2D)]
 pub fn distance_2d(x1: f64, y1: f64, x2: f64, y2: f64) -> f64 {
     ((x2 - x1).powi(2) + (y2 - y1).powi(2)).sqrt()
 }
@@ -64,7 +64,7 @@ pub fn distance_2d(x1: f64, y1: f64, x2: f64, y2: f64) -> f64 {
 /// # Arguments
 /// * `value` - The number to round.
 /// * `decimals` - Precision (number of fractional digits).
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = roundToPrecision)]
 pub fn round_to_precision(value: f64, decimals: u32) -> f64 {
     let factor = 10f64.powi(decimals as i32);
     (value * factor).round() / factor
