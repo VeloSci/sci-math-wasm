@@ -40,7 +40,7 @@ pub fn sinc(x: f64) -> f64 {
 /// 
 /// $$ h = \sqrt{a^2 + b^2} $$
 #[wasm_bindgen]
-pub fn hypot(a: f64, b: f64) -> f64 {
+pub fn hypotenuse(a: f64, b: f64) -> f64 {
     a.hypot(b)
 }
 
