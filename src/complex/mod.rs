@@ -53,6 +53,7 @@ impl Complex {
     /// Creates a complex number from polar coordinates.
     /// 
     /// $$ z = r(\cos \theta + i \sin \theta) $$
+    #[wasm_bindgen(js_name = fromPolar)]
     pub fn from_polar(r: f64, theta: f64) -> Complex {
         let res = Complex64::from_polar(r, theta);
         Complex { re: res.re, im: res.im }
