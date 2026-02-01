@@ -1,17 +1,27 @@
 {
-  "name": "sci-math-wasm",
-  "version": "0.1.0",
+  "name": "@velo-sci/sci-math-wasm",
+  "version": "0.2.0",
   "description": "High-performance scientific mathematical functions for WebAssembly",
   "type": "module",
   "scripts": {
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "wasm:build:node": "wasm-pack build --target nodejs --out-dir pkg/node --release -- --features threads,console_error_panic_hook",
+    "wasm:build:web": "wasm-pack build --target web --out-dir pkg/web --release -- --features threads && node scripts/fix-wasm-workers.js",
+    "wasm:build": "pnpm wasm:build:node && pnpm wasm:build:web",
+    "test": "pnpm test:ts",
+    "test:ts": "pnpm wasm:build:node && node scripts/fix-pkg.cjs && vitest run",
+    "bench:ts": "pnpm wasm:build:node && node scripts/fix-pkg.cjs && vitest bench"
   },
   "devDependencies": {
     "@types/node": "^25.1.0",
     "katex": "^0.16.28",
     "markdown-it-katex": "^2.0.3",
-    "vitepress": "^1.0.0-rc.31"
+    "vite": "^7.3.1",
+    "vite-plugin-wasm": "^3.4.1",
+    "vitepress": "^1.0.0-rc.31",
+    "vitest": "^2.1.3",
+    "vue": "^3.5.27"
   }
 }
