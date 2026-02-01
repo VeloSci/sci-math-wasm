@@ -15,7 +15,13 @@ export default defineConfig({
     }
   },
   vite: {
+    resolve: {
+      preserveSymlinks: true
+    },
     server: {
+      fs: {
+        allow: ['..']
+      },
       headers: {
         'Cross-Origin-Opener-Policy': 'same-origin',
         'Cross-Origin-Embedder-Policy': 'require-corp',

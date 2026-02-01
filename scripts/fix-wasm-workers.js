@@ -5,6 +5,7 @@ const PKG_WEB_SNIPPETS = 'pkg/web/snippets';
 
 if (fs.existsSync(PKG_WEB_SNIPPETS)) {
     const rayonDirs = fs.readdirSync(PKG_WEB_SNIPPETS).filter(d => d.startsWith('wasm-bindgen-rayon'));
+    console.log(`🔍 Found rayon snippets: ${rayonDirs.join(', ')}`);
     
     for (const dir of rayonDirs) {
         const workerFile = path.join(PKG_WEB_SNIPPETS, dir, 'src', 'workerHelpers.worker.js');
