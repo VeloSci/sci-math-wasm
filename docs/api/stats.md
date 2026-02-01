@@ -1,54 +1,59 @@
-# Statistical Functions
+# Statistics
 
-Collection of statistical analysis tools for data processing.
+Basic and advanced statistical analysis for data series via `SciMathJS`.
+
+## Usage
+
+```typescript
+import { SciMathJS } from '@velo-sci/sci-math-wasm';
+
+const data = new Float64Array([1, 2, 3, 4, 100]);
+const avg = SciMathJS.mean(data);
+const std = SciMathJS.standardDeviation(data);
+```
 
 ## API Reference
 
 ### `mean`
-Calculates the arithmetic mean of a sequence.
+Calculates the arithmetic average.
 
 **Formula:**
-$$ \bar{x} = \frac{1}{n} \sum_{i=1}^{n} x_i $$
+$$ \mu = \frac{1}{n} \sum_{i=1}^n x_i $$
 
 **Signature:**
 ```typescript
-function mean(data: Float64Array): number
-```
-
----
-
-### `median`
-Finds the median value in a data set.
-
-**Complexity:** $O(n \log n)$
-
-**Signature:**
-```typescript
-function median(data: Float64Array): number
+function mean(data: Float64Array | number[]): number
 ```
 
 ---
 
 ### `variance`
-Calculates the sample variance ($n-1$).
+Calculates the sample variance ($n-1$ denominator).
 
 **Formula:**
-$$ s^2 = \frac{\sum (x_i - \bar{x})^2}{n - 1} $$
+$$ s^2 = \frac{1}{n-1} \sum_{i=1}^n (x_i - \mu)^2 $$
 
 **Signature:**
 ```typescript
-function variance(data: Float64Array): number
+function variance(data: Float64Array | number[]): number
 ```
 
 ---
 
-### `standard_deviation`
-Calculates the sample standard deviation.
-
-**Formula:**
-$$ \sigma = \sqrt{s^2} $$
+### `standardDeviation`
+Calculates the standard deviation (square root of variance).
 
 **Signature:**
 ```typescript
-function standard_deviation(data: Float64Array): number
+function standardDeviation(data: Float64Array | number[]): number
+```
+
+---
+
+### `median`
+Calculates the median (50th percentile). High-performance implementation using partial sorting (quickselect) in WASM.
+
+**Signature:**
+```typescript
+function median(data: Float64Array | number[]): number
 ```
