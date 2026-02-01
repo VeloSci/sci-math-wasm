@@ -14,8 +14,32 @@ pub mod complex;
 pub mod calculus;
 pub mod units;
 pub mod utils;
+pub mod fast_math;
+#[cfg(feature = "threads")]
+pub mod engine;
+pub mod fft;
+pub mod analysis;
+pub mod fitting;
 
 use wasm_bindgen::prelude::*;
+use js_sys::Promise;
+
+#[cfg(feature = "threads")]
+#[wasm_bindgen]
+pub fn init_threads(n: usize) -> Promise {
+    wasm_bindgen_rayon::init_thread_pool(n)
+}
+
+#[cfg(not(feature = "threads"))]
+#[wasm_bindgen]
+pub fn init_threads(_n: usize) -> Promise {
+    Promise::reject(&"threads feature disabled".into())
+}
+
+#[wasm_bindgen]
+pub fn init_hooks() {
+    console_error_panic_hook::set_once();
+}
 
 #[wasm_bindgen(start)]
 pub fn main_js() {
