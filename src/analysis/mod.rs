@@ -1,7 +1,15 @@
 use rayon::prelude::*;
+use wasm_bindgen::prelude::*;
 
 /// Savitzky-Golay Smoothing Filter - Parallel (Chunked)
-pub fn smooth_savitzky_golay(data: &[f64], window: usize, out: &mut [f64]) {
+#[wasm_bindgen]
+pub fn smooth_savitzky_golay(data: &[f64], window: usize) -> Vec<f64> {
+    let mut out = vec![0.0; data.len()];
+    smooth_savitzky_golay_internal(data, window, &mut out);
+    out
+}
+
+fn smooth_savitzky_golay_internal(data: &[f64], window: usize, out: &mut [f64]) {
     let n = data.len();
     if n < window { return; }
     
@@ -81,7 +89,14 @@ pub fn find_peaks(data: &[f64], threshold: f64) -> Vec<u32> {
 }
 
 /// Baseline Correction (Polynomial Subtraction) - Parallel
-pub fn remove_baseline(data: &[f64], x: &[f64], order: usize, out: &mut [f64]) {
+#[wasm_bindgen]
+pub fn remove_baseline(data: &[f64], x: &[f64], order: usize) -> Vec<f64> {
+     let mut out = vec![0.0; data.len()];
+     remove_baseline_internal(data, x, order, &mut out);
+     out
+}
+
+fn remove_baseline_internal(data: &[f64], x: &[f64], order: usize, out: &mut [f64]) {
     let coeffs = crate::fitting::fit_polynomial(x, data, order).unwrap_or(vec![0.0; order+1]);
     
     // Parallelize the subtraction (computationally minimal, so HUGE chunks needed)
@@ -97,7 +112,14 @@ pub fn remove_baseline(data: &[f64], x: &[f64], order: usize, out: &mut [f64]) {
 }
 
 /// Richardson-Lucy Deconvolution - Parallel (Inner Loop)
-pub fn deconvolve_rl(data: &[f64], kernel: &[f64], iterations: u32, out: &mut [f64]) {
+#[wasm_bindgen]
+pub fn deconvolve_rl(data: &[f64], kernel: &[f64], iterations: u32) -> Vec<f64> {
+    let mut out = vec![0.0; data.len()];
+    deconvolve_rl_internal(data, kernel, iterations, &mut out);
+    out
+}
+
+fn deconvolve_rl_internal(data: &[f64], kernel: &[f64], iterations: u32, out: &mut [f64]) {
     let n = data.len();
     let kn = kernel.len();
     let kh = kn / 2;
@@ -220,7 +242,14 @@ pub fn deconvolve_rl(data: &[f64], kernel: &[f64], iterations: u32, out: &mut [f
 }
 
 /// Butterworth Low-pass Filter (2nd Order IIR) - Parallel (Chunked with Warmup)
-pub fn butterworth_lowpass(data: &[f64], out: &mut [f64], cutoff: f64, fs: f64) {
+#[wasm_bindgen]
+pub fn butterworth_lowpass(data: &[f64], cutoff: f64, fs: f64) -> Vec<f64> {
+    let mut out = vec![0.0; data.len()];
+    butterworth_lowpass_internal(data, &mut out, cutoff, fs);
+    out
+}
+
+fn butterworth_lowpass_internal(data: &[f64], out: &mut [f64], cutoff: f64, fs: f64) {
     let n = data.len();
     let ff = cutoff / fs;
     let ita = (std::f64::consts::PI * ff).tan();
@@ -284,6 +313,7 @@ pub fn butterworth_lowpass(data: &[f64], out: &mut [f64], cutoff: f64, fs: f64) 
 }
 
 /// Robust SNR Estimate - Parallel
+#[wasm_bindgen]
 pub fn estimate_snr(data: &[f64]) -> f64 {
     let n = data.len();
     if n < 2 { return 0.0; }
