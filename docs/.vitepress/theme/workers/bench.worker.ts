@@ -1,5 +1,5 @@
 
-import init, { SciEngine, init_hooks, init_threads } from '../../../../pkg/web/sci_math_wasm.js';
+import init, { SciEngine, initHooks, initThreadPool } from '../../../../pkg/web/sci_math_wasm.js';
 
 let wasmMemory: WebAssembly.Memory;
 
@@ -271,14 +271,14 @@ self.onmessage = async (e) => {
     try {
       self.postMessage({ type: 'log', message: 'CRITICAL: Activating Engine V13 (Hyper-Parallel - Adaptive Granularity)...' });
       const wasm = await init();
-      init_hooks();
+      initHooks();
       
       // V14: Initialize thread pool for multi-core performance
       // Only attempt if cross-origin isolation is enabled, otherwise fallback to sequential
       if (typeof SharedArrayBuffer !== 'undefined' && (self as any).crossOriginIsolated) {
         const nThreads = navigator.hardwareConcurrency || 4;
         self.postMessage({ type: 'log', message: `Initializing ${nThreads} CPU threads (SharedArrayBuffer active)...` });
-        await init_threads(nThreads);
+        await initThreadPool(nThreads);
       } else {
         self.postMessage({ type: 'log', message: 'WARNING: Cross-Origin Isolation NOT detected. Defaulting to sequential (single-threaded) execution.' });
       }
