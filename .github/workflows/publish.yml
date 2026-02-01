@@ -1,0 +1,57 @@
+name: Publish to NPM
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write 
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: wasm32-unknown-unknown
+
+    - name: Install wasm-pack
+      run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+    - name: Install Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        registry-url: 'https://registry.npmjs.org'
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 8
+
+    - name: Install dependencies
+      run: pnpm install
+
+    - name: Build WASM (All Targets)
+      run: pnpm wasm:build
+
+    - name: Fix Node Package.json
+      run: node scripts/fix-pkg.cjs
+
+    - name: Prepare Hybrid Package
+      run: |
+        mkdir -p dist
+        cp -r pkg/node/* dist/
+        # Check if version matches
+        echo "Ready to publish version $(node -p 'require("./package.json").version')"
+
+    - name: Publish to NPM
+      run: |
+        cd pkg/node
+        npm publish --access public
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
