@@ -1,51 +1,33 @@
 # Polynomials
 
-Efficient evaluation and manipulation of polynomial functions.
+Tools for polynomial evaluation, differentiation, and integration via `SciMathJS`.
 
 ## API Reference
 
-### `poly_eval`
-Evaluates a polynomial at a given $x$ using Horner's Method.
-
-**Formula:**
-$$ P(x) = a_n x^n + \cdots + a_1 x + a_0 $$
-
-*Coefficients are expected in **ascending** order of degree ($a_0$ first).*
-
-**Complexity:** $O(n)$
+### `polyEval`
+Evaluates a polynomial at a given point using Horner's method.
 
 **Signature:**
 ```typescript
-function poly_eval(coeffs: Float64Array, x: number): number
-```
-
-**Example:**
-```typescript
-// P(x) = 2x^2 + 3x + 1
-// coeffs = [1, 3, 2] (constant term first)
-const result = poly_eval(new Float64Array([1, 3, 2]), 2.0);
-// 1 + 3(2) + 2(2^2) = 1 + 6 + 8 = 15
+function polyEval(coeffs: Float64Array | number[], x: number): number
 ```
 
 ---
 
-### `poly_derive`
-Calculates the analytical derivative of a polynomial.
-
-**Formula:**
-$$ P'(x) = \sum i a_i x^{i-1} $$
+### `polyDerive`
+Calculates the derivative of a polynomial.
 
 **Signature:**
 ```typescript
-function poly_derive(coeffs: Float64Array): Float64Array
+function polyDerive(coeffs: Float64Array | number[]): Float64Array
 ```
 
 ---
 
-### `poly_integrate`
-Calculates the indefinite integral (antiderivative) of a polynomial given a constant $C$.
+### `polyIntegrate`
+Calculates the indefinite integral of a polynomial.
 
 **Signature:**
 ```typescript
-function poly_integrate(coeffs: Float64Array, c: number): Float64Array
+function polyIntegrate(coeffs: Float64Array | number[], c: number): Float64Array
 ```
