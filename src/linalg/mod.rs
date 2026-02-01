@@ -2,7 +2,7 @@ use rayon::prelude::*;
 use wasm_bindgen::prelude::*;
 
 /// Calculates the dot product of two vectors - Parallel
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = dotProduct)]
 pub fn dot_product(a: &[f64], b: &[f64]) -> Result<f64, JsValue> {
     if a.len() != b.len() {
         return Err(JsValue::from_str("Vectors must have the same length"));
@@ -35,7 +35,7 @@ pub fn normalize(v: &[f64]) -> Vec<f64> {
 }
 
 /// Multiplies two matrices represented as flat arrays - Parallel
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = matrixMultiply)]
 pub fn matrix_multiply(
     a: &[f64], rows_a: usize, cols_a: usize, 
     b: &[f64], rows_b: usize, cols_b: usize
@@ -86,7 +86,7 @@ pub fn transpose(data: &[f64], rows: usize, cols: usize) -> Vec<f64> {
 }
 
 /// Inverts a 2x2 matrix.
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = invert2x2)]
 pub fn invert_2x2(m: &[f64]) -> Result<Vec<f64>, JsValue> {
     if m.len() != 4 {
         return Err(JsValue::from_str("Matrix must be 2x2"));
@@ -98,7 +98,7 @@ pub fn invert_2x2(m: &[f64]) -> Result<Vec<f64>, JsValue> {
 }
 
 /// Inverts a 3x3 matrix.
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = invert3x3)]
 pub fn invert_3x3(m: &[f64]) -> Result<Vec<f64>, JsValue> {
     if m.len() != 9 {
         return Err(JsValue::from_str("Matrix must be 3x3"));
@@ -114,4 +114,59 @@ pub fn invert_3x3(m: &[f64]) -> Result<Vec<f64>, JsValue> {
         (m[5] * m[6] - m[3] * m[8]) * inv_det, (m[0] * m[8] - m[2] * m[6]) * inv_det, (m[2] * m[3] - m[0] * m[5]) * inv_det,
         (m[3] * m[7] - m[4] * m[6]) * inv_det, (m[1] * m[6] - m[0] * m[7]) * inv_det, (m[0] * m[4] - m[1] * m[3]) * inv_det,
     ])
+}
+
+/// Solves a linear system Ax = B using Gaussian elimination with partial pivoting.
+#[wasm_bindgen(js_name = solveLinearSystem)]
+pub fn solve_linear_system(a: &[f64], b: &[f64], n: usize) -> Result<Vec<f64>, JsValue> {
+    if a.len() != n * n || b.len() != n {
+        return Err(JsValue::from_str("Invalid dimensions for linear system"));
+    }
+
+    let mut a_copy = a.to_vec();
+    let mut b_copy = b.to_vec();
+
+    for i in 0..n {
+        // Partial pivoting
+        let mut max_row = i;
+        let mut max_val = a_copy[i * n + i].abs();
+        for k in i + 1..n {
+            let val = a_copy[k * n + i].abs();
+            if val > max_val {
+                max_val = val;
+                max_row = k;
+            }
+        }
+
+        if max_val < 1e-18 {
+            return Err(JsValue::from_str("Matrix is singular or nearly singular"));
+        }
+
+        // Swap rows in A and B
+        if max_row != i {
+            for k in i..n {
+                a_copy.swap(i * n + k, max_row * n + k);
+            }
+            b_copy.swap(i, max_row);
+        }
+
+        // Elimination
+        let pivot = a_copy[i * n + i];
+        for k in i..n {
+            a_copy[i * n + k] /= pivot;
+        }
+        b_copy[i] /= pivot;
+
+        for k in 0..n {
+            if k != i {
+                let factor = a_copy[k * n + i];
+                for j in i..n {
+                    a_copy[k * n + j] -= factor * a_copy[i * n + j];
+                }
+                b_copy[k] -= factor * b_copy[i];
+            }
+        }
+    }
+
+    Ok(b_copy)
 }
