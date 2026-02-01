@@ -55,3 +55,36 @@ pub fn wrap_angle(angle: f64) -> f64 {
     }
     wrapped
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_to_radians_degrees_cycle() {
+        let rad = to_radians(180.0);
+        assert!((rad - PI).abs() < 1e-12);
+        let deg = to_degrees(rad);
+        assert!((deg - 180.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_sinc_zero_and_value() {
+        assert!((sinc(0.0) - 1.0).abs() < 1e-12);
+        let v = sinc(1.0);
+        assert!((v - (PI.sin() / PI)).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_hypot_basic() {
+        assert!((hypot(3.0, 4.0) - 5.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_wrap_angle_range() {
+        let wrapped = wrap_angle(3.0 * PI);
+        assert!((wrapped - PI).abs() < 1e-6);
+        let wrapped_neg = wrap_angle(-3.0 * PI);
+        assert!((wrapped_neg + PI).abs() < 1e-6);
+    }
+}
