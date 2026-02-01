@@ -5,9 +5,30 @@ export default defineConfig({
   title: 'SciMath WASM',
   description: 'High-performance scientific mathematics for WebAssembly',
   base: '/sci-math-wasm/',
+  head: [
+    ['link', { rel: 'icon', href: '/sci-math-wasm/favicon.ico' }],
+    ['script', { src: '/sci-math-wasm/coi-serviceworker.js' }]
+  ],
   markdown: {
     config: (md) => {
       md.use(markdownItKatex)
+    }
+  },
+  vite: {
+    server: {
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Cross-Origin-Embedder-Policy': 'require-corp',
+      }
+    },
+    preview: {
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Cross-Origin-Embedder-Policy': 'require-corp',
+      }
+    },
+    optimizeDeps: {
+      exclude: ['@velo-sci/sci-math-wasm']
     }
   },
   themeConfig: {
@@ -23,6 +44,7 @@ export default defineConfig({
           text: 'Introduction',
           items: [
             { text: 'Getting Started', link: '/guide/getting-started' },
+            { text: 'Integration Guide', link: '/guide/integration' },
             { text: 'WASM Performance', link: '/guide/performance' }
           ]
         }
