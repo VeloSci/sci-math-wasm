@@ -1,35 +1,51 @@
 # Regression Analysis
 
-Fitting mathematical models to observed data.
+Fitting models to data points using `SciMathJS`.
 
 ## API Reference
 
-### `linear_regression`
-Performs a Simple Linear Regression ($y = mx + b$).
+### `linearRegression`
+Performs a simple linear regression using Ordinary Least Squares.
 
-**Formulas:**
-$$ m = \frac{n\sum xy - \sum x \sum y}{n\sum x^2 - (\sum x)^2} $$
-
-$$ b = \frac{\sum y - m\sum x}{n} $$
+**Result Object:**
+- `slope: number`
+- `intercept: number`
+- `rSquared: number`
+- `free(): void` (WASM cleanup)
 
 **Signature:**
 ```typescript
-function linear_regression(x: Float64Array, y: Float64Array): LinearRegressionResult
+function linearRegression(x: Float64Array | number[], y: Float64Array | number[]): LinearRegressionResult
 ```
 
-**Returns Object:**
+---
+
+### `fitLinear`
+Convenience method that returns results as a simple array.
+
+**Signature:**
 ```typescript
-interface LinearRegressionResult {
-  slope: number;
-  intercept: number;
-  r_squared: number;
-}
+function fitLinear(x: Float64Array | number[], y: Float64Array | number[]): [slope: number, intercept: number, rSquared: number]
 ```
 
-**Example:**
+---
+
+### `fitPolynomial`
+Fits a polynomial of specified order to data points.
+
+**Signature:**
 ```typescript
-const x = new Float64Array([1, 2, 3, 4]);
-const y = new Float64Array([2, 4, 5, 4]);
-const result = linear_regression(x, y);
-console.log(`Model: y = ${result.slope}x + ${result.intercept}`);
+function fitPolynomial(x: Float64Array | number[], y: Float64Array | number[], order: number): Float64Array | null
+```
+
+---
+
+### `fitGaussians` / `fitExponential` / `fitLogarithmic`
+Non-linear regression models for specific data patterns.
+
+**Signatures:**
+```typescript
+function fitGaussians(x: Float64Array | number[], y: Float64Array | number[], initial: [a: number, mu: number, sigma: number]): number[]
+function fitExponential(x: Float64Array | number[], y: Float64Array | number[]): [a: number, b: number] | null
+function fitLogarithmic(x: Float64Array | number[], y: Float64Array | number[]): [a: number, b: number] | null
 ```
