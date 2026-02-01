@@ -38,6 +38,8 @@ jobs:
 
     - name: Build WASM (All Targets)
       run: pnpm wasm:build
+      env:
+        RUSTFLAGS: "-C target-feature=+atomics,+bulk-memory,+mutable-globals"
 
     - name: Fix Node Package.json
       run: node scripts/fix-pkg.cjs
