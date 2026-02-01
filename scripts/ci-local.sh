@@ -9,7 +9,7 @@ export RUSTFLAGS=""
 cargo check --features threads
 
 echo "--- 2. Building WASM Modules ---"
-export RUSTFLAGS="-C target-feature=+atomics,+bulk-memory,+mutable-globals"
+export RUSTFLAGS="-C target-feature=+atomics,+bulk-memory,+mutable-globals,+simd128"
 pnpm wasm:build
 
 echo "--- 3. SKIPPING TESTS (User Request) ---"

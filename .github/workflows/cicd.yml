@@ -44,7 +44,7 @@ jobs:
       - name: Build WASM
         run: pnpm wasm:build
         env:
-          RUSTFLAGS: "-C target-feature=+atomics,+bulk-memory,+mutable-globals"
+          RUSTFLAGS: "-C target-feature=+atomics,+bulk-memory,+mutable-globals,+simd128"
 
       - name: Fix WASM Workers
         run: node scripts/fix-wasm-workers.js
