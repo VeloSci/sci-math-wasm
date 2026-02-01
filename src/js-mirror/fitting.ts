@@ -1,6 +1,12 @@
 import { solveLinearSystem } from './linalg';
 
-export function fitLinear(x: number[] | Float64Array, y: number[] | Float64Array): [number, number, number] {
+export interface LinearFitResult {
+    slope: number;
+    intercept: number;
+    r2: number;
+}
+
+export function fitLinear(x: number[] | Float64Array, y: number[] | Float64Array): LinearFitResult {
     const n = x.length;
     let sx = 0, sy = 0, sxy = 0, sxx = 0;
     for (let i = 0; i < n; i++) {
@@ -15,7 +21,8 @@ export function fitLinear(x: number[] | Float64Array, y: number[] | Float64Array
         ssRes += Math.pow(y[i] - pred, 2);
         ssTot += Math.pow(y[i] - syAvg, 2);
     }
-    return [slope, intercept, 1 - ssRes / ssTot];
+    const r2 = 1 - ssRes / ssTot;
+    return { slope, intercept, r2 };
 }
 
 export function fitPolynomial(x: number[] | Float64Array, y: number[] | Float64Array, order: number): Float64Array | null {
@@ -71,7 +78,7 @@ export function fitExponential(x: number[] | Float64Array, y: number[] | Float64
         if (y[i] > 0) { validX.push(x[i]); logY.push(Math.log(y[i])); }
     }
     if (validX.length < 2) return null;
-    const [slopeB, interceptLnA] = fitLinear(validX, logY);
+    const { slope: slopeB, intercept: interceptLnA } = fitLinear(validX, logY);
     return [Math.exp(interceptLnA), slopeB];
 }
 
@@ -81,6 +88,6 @@ export function fitLogarithmic(x: number[] | Float64Array, y: number[] | Float64
         if (x[i] > 0) { logX.push(Math.log(x[i])); validY.push(y[i]); }
     }
     if (logX.length < 2) return null;
-    const [slopeB, interceptA] = fitLinear(logX, validY);
+    const { slope: slopeB, intercept: interceptA } = fitLinear(logX, validY);
     return [interceptA, slopeB];
 }
