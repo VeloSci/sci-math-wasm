@@ -13,8 +13,24 @@ if (fs.existsSync(PKG_WEB_SNIPPETS)) {
     
     console.log(`🔍 Found rayon snippets: ${rayonDirs.join(', ')}`);
     
+    // Debug: List all files in the snippet directories
+    const listAllFiles = (dir) => {
+        const files = fs.readdirSync(dir);
+        files.forEach(file => {
+            const fullPath = path.join(dir, file);
+            if (fs.statSync(fullPath).isDirectory()) {
+                listAllFiles(fullPath);
+            } else {
+                console.log(`📄 File exists: ${fullPath}`);
+            }
+        });
+    };
+
     for (const dir of rayonDirs) {
         const rayonDirPath = path.join(PKG_WEB_SNIPPETS, dir);
+        console.log(`📂 Scanning directory: ${rayonDirPath}`);
+        listAllFiles(rayonDirPath);
+
         
         // Recursive function to find the worker file
         const findWorkerFile = (dirPath) => {
