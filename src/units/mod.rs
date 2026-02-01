@@ -39,3 +39,26 @@ pub fn bar_to_pascal(bar: f64) -> f64 {
 pub fn meters_to_inches(m: f64) -> f64 {
     m * 39.3701
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_temperature_conversions() {
+        assert!((celsius_to_fahrenheit(0.0) - 32.0).abs() < 1e-12);
+        assert!((fahrenheit_to_celsius(32.0) - 0.0).abs() < 1e-12);
+        assert!((celsius_to_kelvin(25.0) - 298.15).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_pressure_conversions() {
+        assert!((pascal_to_bar(100_000.0) - 1.0).abs() < 1e-12);
+        assert!((bar_to_pascal(1.0) - 100_000.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_distance_conversion() {
+        assert!((meters_to_inches(1.0) - 39.3701).abs() < 1e-6);
+    }
+}
