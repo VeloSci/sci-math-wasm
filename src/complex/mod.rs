@@ -58,3 +58,36 @@ impl Complex {
         Complex { re: res.re, im: res.im }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::f64::consts::PI;
+
+    #[test]
+    fn test_add_and_mul() {
+        let a = Complex::new(1.0, 2.0);
+        let b = Complex::new(3.0, 4.0);
+        let sum = a.add(&b);
+        assert_eq!(sum.re, 4.0);
+        assert_eq!(sum.im, 6.0);
+
+        let prod = a.mul(&b);
+        assert_eq!(prod.re, -5.0);
+        assert_eq!(prod.im, 10.0);
+    }
+
+    #[test]
+    fn test_magnitude_and_phase() {
+        let z = Complex::new(0.0, 1.0);
+        assert!((z.magnitude() - 1.0).abs() < 1e-12);
+        assert!((z.phase() - PI / 2.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_from_polar_roundtrip() {
+        let z = Complex::from_polar(2.0, PI / 3.0);
+        assert!((z.magnitude() - 2.0).abs() < 1e-12);
+        assert!((z.phase() - PI / 3.0).abs() < 1e-12);
+    }
+}
