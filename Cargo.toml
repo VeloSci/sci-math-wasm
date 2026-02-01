@@ -1,10 +1,11 @@
 [package]
 name = "sci-math-wasm"
-version = "0.1.0"
-edition = "2024"
+version = "0.2.0"
+edition = "2021"
 authors = ["VeloSci Team"]
 description = "High-performance scientific mathematical functions for WebAssembly"
 license = "MIT"
+repository = "https://github.com/VeloSci/sci-math-wasm"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -13,17 +14,23 @@ crate-type = ["cdylib", "rlib"]
 wasm-bindgen = "0.2"
 js-sys = "0.3"
 num-complex = "0.4"
+rayon = { version = "1.11", optional = true }
+wasm-bindgen-rayon = { version = "1.0.3", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
+wasm-bindgen-rayon = "=1.2.1"
 
 [features]
-default = ["console_error_panic_hook"]
+default = ["console_error_panic_hook", "threads"]
+threads = ["rayon", "wasm-bindgen-rayon"]
 
 [profile.release]
-# Optimize for small binary size and high performance
+# Optimize for maximum performance
 opt-level = 3
-lto = true
+lto = "fat"
 codegen-units = 1
-panic = "abort"
+debug = true # Temporarily enable debug symbols for trace
+incremental = false
+overflow-checks = false
