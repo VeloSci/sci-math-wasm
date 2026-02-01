@@ -1,4 +1,10 @@
+import { getWasmProvider } from './wasm-provider';
+
 export function fftRadix2(re: Float64Array, im: Float64Array, inverse = false): void {
+    const wasm = getWasmProvider();
+    if (wasm && wasm.fftRadix2) return wasm.fftRadix2(re, im, inverse);
+    
+    // JS Implementation
     const n = re.length;
     let j = 0;
     for (let i = 0; i < n - 1; i++) {
@@ -40,6 +46,9 @@ export function fftRadix2(re: Float64Array, im: Float64Array, inverse = false): 
 }
 
 export function rfftRadix2(data: Float64Array | number[], reOut: Float64Array, imOut: Float64Array): void {
+    const wasm = getWasmProvider();
+    if (wasm && wasm.rfftRadix2) return wasm.rfftRadix2(data, reOut, imOut);
+    
     const n = data.length;
     const halfN = n / 2;
     for (let i = 0; i < halfN; i++) {
@@ -50,6 +59,10 @@ export function rfftRadix2(data: Float64Array | number[], reOut: Float64Array, i
 }
 
 export function fft(input: Float64Array | number[]): Float64Array {
+    const wasm = getWasmProvider();
+    if (wasm && wasm.fft) return wasm.fft(input);
+    
+    // JS Implementation
     const n = input.length;
     const re = new Float64Array(input);
     const im = new Float64Array(n);
@@ -60,6 +73,9 @@ export function fft(input: Float64Array | number[]): Float64Array {
 }
 
 export function magnitude(complexData: Float64Array | number[]): Float64Array {
+    const wasm = getWasmProvider();
+    if (wasm && wasm.magnitude) return wasm.magnitude(complexData);
+    
     const n = complexData.length / 2;
     const out = new Float64Array(n);
     for (let i = 0; i < n; i++) {
@@ -71,6 +87,10 @@ export function magnitude(complexData: Float64Array | number[]): Float64Array {
 }
 
 export function movingAverage(data: Float64Array | number[], window: number): Float64Array {
+    const wasm = getWasmProvider();
+    if (wasm && wasm.movingAverage) return wasm.movingAverage(data, window);
+    
+    // JS Implementation
     const n = data.length;
     const out = new Float64Array(n);
     const half = Math.floor(window / 2);
@@ -89,6 +109,9 @@ export function movingAverage(data: Float64Array | number[], window: number): Fl
 }
 
 export function findPeaks(data: Float64Array | number[], threshold: number): number[] {
+    const wasm = getWasmProvider();
+    if (wasm && wasm.findPeaks) return Array.from(wasm.findPeaks(data, threshold));
+    
     const peaks: number[] = [];
     for (let i = 1; i < data.length - 1; i++) {
         if (data[i] > data[i - 1] && data[i] > data[i + 1] && data[i] >= threshold) peaks.push(i);
@@ -97,6 +120,10 @@ export function findPeaks(data: Float64Array | number[], threshold: number): num
 }
 
 export function deconvolveRL(data: Float64Array | number[], kernel: Float64Array | number[], iterations: number): Float64Array {
+    const wasm = getWasmProvider();
+    if (wasm && wasm.deconvolveRL) return wasm.deconvolveRL(data, kernel, iterations);
+    
+    // JS Implementation
     const n = data.length, kn = kernel.length, kh = Math.floor(kn / 2);
     let current = new Float64Array(n).fill(1.0);
     const kFlipped = new Float64Array(kernel).reverse();
@@ -127,6 +154,10 @@ export function deconvolveRL(data: Float64Array | number[], kernel: Float64Array
 }
 
 export function butterworthLowpass(data: Float64Array | number[], cutoff: number, fs: number): Float64Array {
+    const wasm = getWasmProvider();
+    if (wasm && wasm.butterworthLowpass) return wasm.butterworthLowpass(data, cutoff, fs);
+    
+    // JS Implementation
     const n = data.length, ff = cutoff / fs, ita = Math.tan(Math.PI * ff), q = Math.sqrt(2);
     const b0 = (ita * ita) / (1.0 + q * ita + (ita * ita));
     const b1 = 2.0 * b0, b2 = b0;
