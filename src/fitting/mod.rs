@@ -1,7 +1,15 @@
 use rayon::prelude::*;
+use wasm_bindgen::prelude::*;
 
 /// Simple Linear Regression Fit: y = mx + c - Parallel
-pub fn fit_linear(x: &[f64], y: &[f64]) -> (f64, f64, f64) {
+#[wasm_bindgen]
+pub struct LinearFitResult {
+    pub slope: f64,
+    pub intercept: f64,
+    pub r2: f64,
+}
+
+fn fit_linear_internal(x: &[f64], y: &[f64]) -> (f64, f64, f64) {
     let n_input = x.len();
     if n_input == 0 { return (0.0, 0.0, 0.0); }
 
@@ -40,6 +48,12 @@ pub fn fit_linear(x: &[f64], y: &[f64]) -> (f64, f64, f64) {
     let r2 = if ss_tot > 0.0 { 1.0 - (ss_res / ss_tot) } else { 0.0 };
 
     (slope, intercept, r2)
+}
+
+#[wasm_bindgen]
+pub fn fit_linear(x: &[f64], y: &[f64]) -> LinearFitResult {
+    let (slope, intercept, r2) = fit_linear_internal(x, y);
+    LinearFitResult { slope, intercept, r2 }
 }
 
 /// Solve Ax = b using Gauss-Jordan elimination with partial pivoting.
@@ -82,27 +96,18 @@ pub fn solve_linear_system(a: &mut [f64], b: &mut [f64], n: usize) -> Option<Vec
 }
 
 /// Fit Polynomial of given order
+#[wasm_bindgen]
 pub fn fit_polynomial(x: &[f64], y: &[f64], order: usize) -> Option<Vec<f64>> {
     let n_pts = x.len();
     if n_pts == 0 { return None; }
     let n = order + 1;
     
-    let (x_min, x_max_val) = x.par_iter()
-        .with_min_len(16384)
-        .fold(|| (f64::INFINITY, f64::NEG_INFINITY), |acc, &xi| {
-            (acc.0.min(xi), acc.1.max(xi))
-        })
-        .reduce(|| (f64::INFINITY, f64::NEG_INFINITY), |a, b| {
-            (a.0.min(b.0), a.1.max(b.1))
-        });
-
-    let x_range = x_max_val - x_min;
-    let inv_range = if x_range > 0.0 { 1.0 / x_range } else { 1.0 };
+    // No normalization to match JS and provide coefficients for original x
+    // Use high precision accumulation if needed, but here we use f64
 
     let (powers, vector_sums) = x.par_iter().zip(y.par_iter()).with_min_len(4096).fold(
         || (vec![0.0; 2 * order + 1], vec![0.0; n]),
-        |mut acc, (&xi_raw, &yi)| {
-            let xi = (xi_raw - x_min) * inv_range;
+        |mut acc, (&xi, &yi)| {
             let mut p = 1.0;
             for j in 0..=2 * order {
                 acc.0[j] += p;
@@ -140,8 +145,14 @@ fn gaussian(x: f64, a: f64, mu: f64, sigma: f64) -> f64 {
 }
 
 /// Levenberg-Marquardt for Gaussian Fitting
-pub fn fit_gaussians(x: &[f64], y: &[f64], initial: [f64; 3]) -> Vec<f64> {
-    let mut p = initial;
+#[wasm_bindgen]
+pub fn fit_gaussians(x: &[f64], y: &[f64], initial: &[f64]) -> Vec<f64> {
+    let mut p = [0.0; 3];
+    if initial.len() >= 3 {
+        p[0] = initial[0];
+        p[1] = initial[1];
+        p[2] = initial[2];
+    }
     let mut lambda = 0.001;
     
     for _iter in 0..20 {
@@ -208,7 +219,8 @@ pub fn fit_gaussians(x: &[f64], y: &[f64], initial: [f64; 3]) -> Vec<f64> {
 }
 
 /// Exponential Fit: y = A * exp(B * x) - Parallel
-pub fn fit_exponential(x: &[f64], y: &[f64]) -> Option<[f64; 2]> {
+#[wasm_bindgen]
+pub fn fit_exponential(x: &[f64], y: &[f64]) -> Option<Vec<f64>> {
     if x.len() < 2 { return None; }
     
     let filtered: Vec<(f64, f64)> = x.par_iter().zip(y.par_iter())
@@ -221,12 +233,13 @@ pub fn fit_exponential(x: &[f64], y: &[f64]) -> Option<[f64; 2]> {
     
     let (valid_x, log_y): (Vec<f64>, Vec<f64>) = filtered.into_iter().unzip();
     
-    let (slope_b, intercept_lna, _) = fit_linear(&valid_x, &log_y);
-    Some([intercept_lna.exp(), slope_b])
+    let (slope_b, intercept_lna, _r2) = fit_linear_internal(&valid_x, &log_y);
+    Some(vec![intercept_lna.exp(), slope_b])
 }
 
 /// Logarithmic Fit: y = A + B * ln(x) - Parallel
-pub fn fit_logarithmic(x: &[f64], y: &[f64]) -> Option<[f64; 2]> {
+#[wasm_bindgen]
+pub fn fit_logarithmic(x: &[f64], y: &[f64]) -> Option<Vec<f64>> {
     if x.len() < 2 { return None; }
     
     let filtered: Vec<(f64, f64)> = x.par_iter().zip(y.par_iter())
@@ -239,6 +252,6 @@ pub fn fit_logarithmic(x: &[f64], y: &[f64]) -> Option<[f64; 2]> {
     
     let (log_x, valid_y): (Vec<f64>, Vec<f64>) = filtered.into_iter().unzip();
     
-    let (slope_b, intercept_a, _) = fit_linear(&log_x, &valid_y);
-    Some([intercept_a, slope_b])
+    let (slope_b, intercept_a, _r2) = fit_linear_internal(&log_x, &valid_y);
+    Some(vec![intercept_a, slope_b])
 }
