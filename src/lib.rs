@@ -25,18 +25,15 @@ use wasm_bindgen::prelude::*;
 use js_sys::Promise;
 
 #[cfg(all(feature = "wasm-threads", target_arch = "wasm32"))]
-#[wasm_bindgen]
-pub fn init_threads(n: usize) -> Promise {
-    wasm_bindgen_rayon::init_thread_pool(n)
-}
+pub use wasm_bindgen_rayon::init_thread_pool as initThreadPool;
 
 #[cfg(any(not(feature = "wasm-threads"), not(target_arch = "wasm32")))]
-#[wasm_bindgen]
-pub fn init_threads(_n: usize) -> Promise {
+#[wasm_bindgen(js_name = initThreadPool)]
+pub fn init_thread_pool_fallback(_n: usize) -> Promise {
     Promise::resolve(&JsValue::from_str("threads not supported on this platform/configuration"))
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = initHooks)]
 pub fn init_hooks() {
     console_error_panic_hook::set_once();
 }
