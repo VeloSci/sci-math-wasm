@@ -29,7 +29,7 @@ pub fn variance(data: &[f64]) -> f64 {
 }
 
 /// Calculates the standard deviation of a sample - Parallel
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = standardDeviation)]
 pub fn standard_deviation(data: &[f64]) -> f64 {
     variance(data).sqrt()
 }
