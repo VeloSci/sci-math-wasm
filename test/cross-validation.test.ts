@@ -12,8 +12,10 @@ describe('Cross-Validation: WASM vs JS', () => {
     let engine: wasm.SciEngine;
 
     beforeAll(async () => {
-        // initThreadPool handles Rayon setup in Node
-        await wasm.initThreadPool(2);
+        // initThreadPool handles Rayon setup in Node if available
+        if (typeof (wasm as any).initThreadPool === 'function') {
+            await (wasm as any).initThreadPool(2);
+        }
         engine = new wasm.SciEngine();
     });
 
@@ -70,7 +72,7 @@ describe('Cross-Validation: WASM vs JS', () => {
         const y = new Float64Array([1, 2, 3, 4]);
         const wasmRes = wasm.linear_regression(x, y);
         const jsRes = SciMathJS.fitLinear(x, y);
-        assertNear(jsRes[0], wasmRes.slope);
-        assertNear(jsRes[1], wasmRes.intercept);
+        assertNear(jsRes.slope, wasmRes.slope);
+        assertNear(jsRes.intercept, wasmRes.intercept);
     });
 });
