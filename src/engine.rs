@@ -206,7 +206,8 @@ impl SciEngine {
         unsafe {
             let in_slice = std::slice::from_raw_parts(in_ptr, n);
             let out_slice = std::slice::from_raw_parts_mut(out_ptr, n);
-            crate::analysis::smooth_savitzky_golay(in_slice, window, out_slice);
+            let res = crate::analysis::smooth_savitzky_golay(in_slice, window);
+            out_slice.copy_from_slice(&res);
         }
     }
 
@@ -224,19 +225,19 @@ impl SciEngine {
     pub fn fit_gaussians(&self, x_id: u32, y_id: u32, a: f64, mu: f64, sigma: f64) -> Vec<f64> {
         let x = self.vectors.get(&x_id).unwrap();
         let y = self.vectors.get(&y_id).unwrap();
-        crate::fitting::fit_gaussians(x, y, [a, mu, sigma])
+        crate::fitting::fit_gaussians(x, y, &[a, mu, sigma])
     }
 
     pub fn fit_exponential(&self, x_id: u32, y_id: u32) -> Vec<f64> {
         let x = self.vectors.get(&x_id).unwrap();
         let y = self.vectors.get(&y_id).unwrap();
-        crate::fitting::fit_exponential(x, y).map(|[a, b]| vec![a, b]).unwrap_or_else(|| vec![0.0, 0.0])
+        crate::fitting::fit_exponential(x, y).map(|v| vec![v[0], v[1]]).unwrap_or(vec![])
     }
 
     pub fn fit_logarithmic(&self, x_id: u32, y_id: u32) -> Vec<f64> {
         let x = self.vectors.get(&x_id).unwrap();
         let y = self.vectors.get(&y_id).unwrap();
-        crate::fitting::fit_logarithmic(x, y).map(|[a, b]| vec![a, b]).unwrap_or_else(|| vec![0.0, 0.0])
+        crate::fitting::fit_logarithmic(x, y).map(|v| vec![v[0], v[1]]).unwrap_or(vec![])
     }
 
     pub fn deconvolve(&mut self, id: u32, kernel_id: u32, out_id: u32, iterations: u32) {
@@ -246,7 +247,8 @@ impl SciEngine {
         let k_ptr = self.vectors.get(&kernel_id).unwrap().as_ptr();
         let o_ptr = self.vectors.get_mut(&out_id).unwrap().as_mut_ptr();
         unsafe {
-            crate::analysis::deconvolve_rl(std::slice::from_raw_parts(d_ptr, n), std::slice::from_raw_parts(k_ptr, kn), iterations, std::slice::from_raw_parts_mut(o_ptr, n));
+            let res = crate::analysis::deconvolve_rl(std::slice::from_raw_parts(d_ptr, n), std::slice::from_raw_parts(k_ptr, kn), iterations);
+            std::slice::from_raw_parts_mut(o_ptr, n).copy_from_slice(&res);
         }
     }
 
@@ -267,7 +269,8 @@ impl SciEngine {
         let i_ptr = self.vectors.get(&id).unwrap().as_ptr();
         let o_ptr = self.vectors.get_mut(&out_id).unwrap().as_mut_ptr();
         unsafe {
-            crate::analysis::butterworth_lowpass(std::slice::from_raw_parts(i_ptr, n), std::slice::from_raw_parts_mut(o_ptr, n), cutoff, fs);
+            let res = crate::analysis::butterworth_lowpass(std::slice::from_raw_parts(i_ptr, n), cutoff, fs);
+            std::slice::from_raw_parts_mut(o_ptr, n).copy_from_slice(&res);
         }
     }
 
