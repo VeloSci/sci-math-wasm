@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cross-Validation: WASM vs JS</title>
+</head>
+<body>
+    <div id="results">Running tests...</div>
+    <script type="module">
+        import init, { SciEngine, ...wasm } from './pkg/web/sci_math_wasm.js';
+        import { SciMathJS } from './src/sci-math.ts';
+
+        async function run() {
+            const results = document.getElementById('results');
+            try {
+                await init();
+                await wasm.initThreadPool(navigator.hardwareConcurrency || 4);
+                const engine = new SciEngine();
+
+                const assertNear = (name, actual, expected, epsilon = 1e-10) => {
+                    if (typeof actual === 'number' && typeof expected === 'number') {
+                        if (Math.abs(actual - expected) > epsilon) throw new Error(`${name} failed: expected ${expected}, got ${actual}`);
+                    } else if (actual instanceof Float64Array || Array.isArray(actual)) {
+                        if (actual.length !== expected.length) throw new Error(`${name} failed: length mismatch`);
+                        for (let i = 0; i < actual.length; i++) {
+                            if (Math.abs(actual[i] - expected[i]) > epsilon) throw new Error(`${name} failed at index ${i}: expected ${expected[i]}, got ${actual[i]}`);
+                        }
+                    }
+                };
+
+                // 1. Stats
+                const data = new Float64Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+                assertNear('Mean', SciMathJS.mean(data), wasm.mean(data));
+                assertNear('Variance', SciMathJS.variance(data), wasm.variance(data));
+                assertNear('Median', SciMathJS.median(data), wasm.median(data));
+
+                // 2. Linalg
+                const a = new Float64Array([1, 2, 3]);
+                const b = new Float64Array([4, 5, 6]);
+                assertNear('Dot Product', SciMathJS.dotProduct(a, b), wasm.dot_product(a, b));
+                assertNear('Normalize', SciMathJS.normalize(a), wasm.normalize(a));
+
+                // 3. FFT
+                const fftData = new Float64Array([1, 0, 0, 0, 1, 0, 0, 0]);
+                const wasmFFT = wasm.fft(fftData);
+                const re = new Float64Array(8);
+                const im = new Float64Array(8);
+                re.set(fftData);
+                SciMathJS.fftRadix2(re, im);
+                for (let i = 0; i < 8; i++) {
+                    assertNear(`FFT Re[${i}]`, re[i], wasmFFT[2 * i]);
+                    assertNear(`FFT Im[${i}]`, im[i], wasmFFT[2 * i + 1]);
+                }
+
+                results.innerHTML = '<h2 style="color: green">✅ All tests passed!</h2>';
+            } catch (e) {
+                results.innerHTML = `<h2 style="color: red">❌ Tests failed: ${e.message}</h2><pre>${e.stack}</pre>`;
+            }
+        }
+        run();
+    </script>
+</body>
+</html>
