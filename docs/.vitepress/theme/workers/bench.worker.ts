@@ -320,10 +320,10 @@ self.onmessage = async (e) => {
         },
         {
           id: 'deconvolution',
-          name: 'Deconvolution (10k pts - 50 iters)',
+          name: 'Deconvolution (100k pts - 50 iters)',
           iterations: 5,
           setup: () => {
-              const s = 10000;
+              const s = 100000;
               const hIn = engine.create_vector(s);
               const hK = engine.create_vector(11);
               const hOut = engine.create_vector(s);

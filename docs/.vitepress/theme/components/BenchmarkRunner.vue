@@ -13,7 +13,7 @@ interface BenchResult {
 const results = ref<Record<string, BenchResult>>({
   'nbody': { id: 'nbody', name: 'N-Body Turbo (f32x4 SIMD)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
   'calculus': { id: 'calculus', name: 'Calculus (Diff+Integ 1M pts)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
-  'deconvolution': { id: 'deconvolution', name: 'Deconvolution (10k pts)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
+  'deconvolution': { id: 'deconvolution', name: 'Deconvolution (100k pts)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
   'filters': { id: 'filters', name: 'Butterworth Filter (1M pts)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
   'analysis_fitting': { id: 'analysis_fitting', name: 'Analysis & Fitting (100k pts)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
   'fft': { id: 'fft', name: 'FFT (65k Points)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
