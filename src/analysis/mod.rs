@@ -1,4 +1,43 @@
 use rayon::prelude::*;
+use wasm_bindgen::prelude::*;
+
+#[wasm_bindgen(js_name = smoothSG)]
+pub fn smooth_sg_wasm(data: &[f64], window: usize) -> Vec<f64> {
+    let mut out = vec![0.0; data.len()];
+    smooth_savitzky_golay(data, window, &mut out);
+    out
+}
+
+#[wasm_bindgen(js_name = findPeaks)]
+pub fn find_peaks_wasm(data: &[f64], threshold: f64) -> Vec<u32> {
+    find_peaks(data, threshold)
+}
+
+#[wasm_bindgen(js_name = removeBaseline)]
+pub fn baseline_remove_wasm(data: &[f64], x: &[f64], order: usize) -> Vec<f64> {
+    let mut out = vec![0.0; data.len()];
+    remove_baseline(data, x, order, &mut out);
+    out
+}
+
+#[wasm_bindgen(js_name = deconvolveRL)]
+pub fn deconvolve_rl_wasm(data: &[f64], kernel: &[f64], iterations: u32) -> Vec<f64> {
+    let mut out = vec![0.0; data.len()];
+    deconvolve_rl(data, kernel, iterations, &mut out);
+    out
+}
+
+#[wasm_bindgen(js_name = butterworthLowpass)]
+pub fn butterworth_filter_wasm(data: &[f64], cutoff: f64, fs: f64) -> Vec<f64> {
+    let mut out = vec![0.0; data.len()];
+    butterworth_lowpass(data, &mut out, cutoff, fs);
+    out
+}
+
+#[wasm_bindgen(js_name = estimateSNR)]
+pub fn snr_estimate_wasm(data: &[f64]) -> f64 {
+    estimate_snr(data)
+}
 
 /// Savitzky-Golay Smoothing Filter - Parallel (Chunked)
 pub fn smooth_savitzky_golay(data: &[f64], window: usize, out: &mut [f64]) {
