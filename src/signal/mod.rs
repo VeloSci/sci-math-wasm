@@ -37,7 +37,7 @@ pub fn magnitude(complex_data: &[f64]) -> Vec<f64> {
 }
 
 /// Applies a moving average filter to smoothing out a signal - Parallel
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = movingAverage)]
 pub fn moving_average(data: &[f64], window: usize) -> Vec<f64> {
     let n = data.len();
     if n == 0 || window == 0 { return data.to_vec(); }
@@ -92,7 +92,7 @@ pub fn moving_average(data: &[f64], window: usize) -> Vec<f64> {
 }
 
 /// Simple peak detection based on local maxima and a threshold - Parallel
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = findPeaksSimple)]
 pub fn find_peaks(data: &[f64], threshold: f64) -> Vec<usize> {
     let n = data.len();
     if n < 3 { return vec![]; }
