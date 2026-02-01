@@ -69,3 +69,34 @@ pub fn round_to_precision(value: f64, decimals: u32) -> f64 {
     let factor = 10f64.powi(decimals as i32);
     (value * factor).round() / factor
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_clamp_bounds() {
+        assert_eq!(clamp(5.0, 0.0, 10.0), 5.0);
+        assert_eq!(clamp(-2.0, 0.0, 10.0), 0.0);
+        assert_eq!(clamp(12.0, 0.0, 10.0), 10.0);
+    }
+
+    #[test]
+    fn test_lerp_midpoint() {
+        assert_eq!(lerp(0.0, 10.0, 0.5), 5.0);
+        assert_eq!(lerp(10.0, 20.0, 0.0), 10.0);
+        assert_eq!(lerp(10.0, 20.0, 1.0), 20.0);
+    }
+
+    #[test]
+    fn test_distance_2d() {
+        let d = distance_2d(0.0, 0.0, 3.0, 4.0);
+        assert!((d - 5.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_round_to_precision() {
+        assert_eq!(round_to_precision(3.14159, 2), 3.14);
+        assert_eq!(round_to_precision(3.145, 2), 3.15);
+    }
+}
