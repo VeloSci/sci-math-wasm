@@ -69,3 +69,18 @@ pub fn linear_regression(x: &[f64], y: &[f64]) -> Result<LinearRegressionResult,
         r_squared,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_linear_regression_basic() {
+        let x = [1.0, 2.0, 3.0, 4.0];
+        let y = [2.0, 4.0, 6.0, 8.0];
+        let res = linear_regression(&x, &y).unwrap();
+        assert!((res.slope - 2.0).abs() < 1e-12);
+        assert!((res.intercept).abs() < 1e-12);
+        assert!((res.r_squared - 1.0).abs() < 1e-12);
+    }
+}
