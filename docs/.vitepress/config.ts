@@ -55,7 +55,8 @@ export default defineConfig({
           text: 'Introduction',
           items: [
             { text: 'Getting Started', link: '/guide/getting-started' },
-            { text: 'Integration Guide', link: '/guide/integration' },
+            { text: 'JS vs WASM', link: '/guide/js-vs-wasm' },
+            { text: 'Integration', link: '/guide/integration' },
             { text: 'WASM Performance', link: '/guide/performance' }
           ]
         }
