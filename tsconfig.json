@@ -7,12 +7,13 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "types": ["vitepress/client", "node"]
+    "types": ["vitepress/client", "node", "vitest", "vue", "vite/client"]
   },
   "include": [
     "docs/**/*.ts",
     "docs/**/*.vue",
     "docs/.vitepress/**/*.ts",
-    "docs/.vitepress/**/*.vue"
+    "docs/.vitepress/**/*.vue",
+    "tests/**/*.ts"
   ]
 }
