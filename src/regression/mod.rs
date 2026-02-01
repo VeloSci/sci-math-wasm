@@ -12,6 +12,7 @@ pub struct LinearRegressionResult {
     /// Intercept (b)
     pub intercept: f64,
     /// R-squared ($R^2$) value
+    #[wasm_bindgen(js_name = rSquared)]
     pub r_squared: f64,
 }
 
@@ -24,7 +25,7 @@ pub struct LinearRegressionResult {
 /// # Arguments
 /// * `x` - Independent variables.
 /// * `y` - Dependent variables.
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = linearRegression)]
 pub fn linear_regression(x: &[f64], y: &[f64]) -> Result<LinearRegressionResult, JsValue> {
     let n = x.len();
     if n != y.len() {
