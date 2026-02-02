@@ -1,8 +1,23 @@
 {
   "name": "@velo-sci/sci-math-wasm",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "High-performance scientific mathematical functions for WebAssembly",
   "type": "module",
+  "main": "./pkg/web/sci_math_wasm.js",
+  "module": "./pkg/web/sci_math_wasm.js",
+  "types": "./pkg/web/sci_math_wasm.d.ts",
+  "exports": {
+    ".": {
+      "types": "./pkg/web/sci_math_wasm.d.ts",
+      "import": "./pkg/web/sci_math_wasm.js",
+      "default": "./pkg/web/sci_math_wasm.js"
+    },
+    "./snippets/*": "./pkg/web/snippets/*"
+  },
+  "files": [
+    "pkg/web",
+    "README.md"
+  ],
   "scripts": {
     "docs:dev": "vitepress dev docs",
     "docs:build": "node scripts/fix-wasm-workers.js && vitepress build docs",
