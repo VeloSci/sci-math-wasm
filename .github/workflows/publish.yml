@@ -45,15 +45,11 @@ jobs:
       run: node scripts/fix-pkg.cjs
 
     - name: Prepare Hybrid Package
-      run: |
-        mkdir -p dist
-        cp -r pkg/node/* dist/
-        # Check if version matches
-        echo "Ready to publish version $(node -p 'require("./package.json").version')"
+      run: node scripts/prepare-dist.js
 
     - name: Publish to NPM
       run: |
-        cd pkg/node
+        cd dist
         npm publish --access public
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
