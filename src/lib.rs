@@ -20,6 +20,7 @@ pub mod engine;
 pub mod fft;
 pub mod analysis;
 pub mod fitting;
+pub mod io;
 
 use wasm_bindgen::prelude::*;
 use js_sys::Promise;

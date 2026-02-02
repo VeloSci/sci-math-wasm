@@ -11,6 +11,13 @@ interface BenchResult {
 }
 
 const results = ref<Record<string, BenchResult>>({
+  // IO Module Benchmarks
+  'io_csv_small': { id: 'io_csv_small', name: 'CSV Parsing (10K rows)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
+  'io_csv_large': { id: 'io_csv_large', name: 'CSV Parsing (100K rows)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
+  'io_mpt': { id: 'io_mpt', name: 'MPT File Processing', js: 0, wasm: 0, ratio: 0, status: 'pending' },
+  'io_format_detection': { id: 'io_format_detection', name: 'Format Detection', js: 0, wasm: 0, ratio: 0, status: 'pending' },
+  
+  // Mathematical Computing Benchmarks
   'nbody': { id: 'nbody', name: 'N-Body Turbo (f32x4 SIMD)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
   'calculus': { id: 'calculus', name: 'Calculus (Diff+Integ 1M pts)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
   'deconvolution': { id: 'deconvolution', name: 'Deconvolution (100k pts)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
@@ -105,7 +112,7 @@ onUnmounted(() => {
     <div class="bench-header">
       <div class="header-content">
         <h2>Live Execution Lab <span class="simd-tag">SIMD ENABLED</span></h2>
-        <p>High-performance math kernels running in a background Web Worker with WASM SIMD acceleration.</p>
+        <p>High-performance scientific computing and file processing benchmarks running in a background Web Worker with WASM acceleration.</p>
       </div>
       <button @click="startBenchmarks" :disabled="isRunning" class="run-button" :class="{ 'is-running': isRunning }">
         <span v-if="isRunning" class="spinner"></span>
@@ -125,7 +132,42 @@ onUnmounted(() => {
 
       <!-- Results Panel -->
       <div class="results-panel">
-        <div v-for="res in results" :key="res.id" class="result-card" :class="{ 'is-active': res.status === 'running', 'is-done': res.status === 'done' }">
+        <!-- IO Module Benchmarks Section -->
+        <div class="category-header">📁 File Processing Benchmarks</div>
+        <div v-for="res in Object.values(results).filter(r => r.id.startsWith('io_'))" 
+             :key="res.id" 
+             class="result-card" 
+             :class="{ 'is-active': res.status === 'running', 'is-done': res.status === 'done' }">
+          <div class="card-top">
+            <span class="card-name">{{ res.name }}</span>
+            <span v-if="res.status === 'done'" class="ratio-badge">{{ res.ratio.toFixed(1) }}x</span>
+            <span v-else-if="res.status === 'running'" class="running-tag">RUNNING</span>
+          </div>
+          
+          <div class="bars">
+            <div class="bar-group">
+              <div class="bar-label">JS</div>
+              <div class="bar-track">
+                <div class="bar js-bar" :style="{ width: res.status !== 'pending' ? '100%' : '0%' }"></div>
+                <span v-if="res.js > 0" class="bar-val">{{ res.js.toFixed(3) }}ms</span>
+              </div>
+            </div>
+            <div class="bar-group">
+              <div class="bar-label">WASM</div>
+              <div class="bar-track">
+                <div class="bar wasm-bar" :style="{ width: res.status === 'done' ? (res.wasm / res.js * 100) + '%' : '0%' }"></div>
+                <span v-if="res.wasm > 0" class="bar-val">{{ res.wasm.toFixed(3) }}ms</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Mathematical Computing Benchmarks Section -->
+        <div class="category-header">🧮 Mathematical Computing Benchmarks</div>
+        <div v-for="res in Object.values(results).filter(r => !r.id.startsWith('io_'))" 
+             :key="res.id" 
+             class="result-card" 
+             :class="{ 'is-active': res.status === 'running', 'is-done': res.status === 'done' }">
           <div class="card-top">
             <span class="card-name">{{ res.name }}</span>
             <span v-if="res.status === 'done'" class="ratio-badge">{{ res.ratio.toFixed(1) }}x</span>
@@ -291,6 +333,15 @@ onUnmounted(() => {
   overflow-y: auto;
   background: var(--vp-c-bg);
   scrollbar-width: thin;
+}
+
+.category-header {
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: var(--vp-c-brand-1);
+  margin: 1.5rem 0 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--vp-c-brand-soft);
 }
 
 .result-card {

@@ -1,5 +1,5 @@
 
-import init, { SciEngine, initHooks, initThreadPool } from '../../../../pkg/web/sci_math_wasm.js';
+import init, { SciEngine, initHooks, initThreadPool, TextStreamer, sniffFormat, parseNumericCSVFast, parseFixedWidthFast, allocParseBuffer, parseBufferInPlace, getResultPtr, getResultLen } from '../../../../pkg/web/sci_math_wasm.js';
 
 let wasmMemory: WebAssembly.Memory;
 
@@ -237,6 +237,33 @@ const jsDeconvRL = (data: Float64Array, kernel: Float64Array, iterations: number
     return current;
 }
 
+// JS File Processing Implementations
+const jsParseCSV = (text: string): string[][] => {
+    return text.trim().split('\n').map(line => line.split(','));
+};
+
+const jsParseTSV = (text: string): string[][] => {
+    return text.trim().split('\n').map(line => line.split('\t'));
+};
+
+const jsParseMPT = (text: string): string[][] => {
+    const lines = text.trim().split('\n');
+    // Skip first 60 lines (metadata) + 1 header line
+    return lines.slice(61).map(line => line.split('\t'));
+};
+
+const jsSniffFormat = (header: Uint8Array): { format: string; delimiter: number; skipLines: number } => {
+    const text = new TextDecoder().decode(header);
+    const commaCount = (text.match(/,/g) || []).length;
+    const tabCount = (text.match(/\t/g) || []).length;
+    
+    if (tabCount > commaCount) {
+        return { format: 'tsv', delimiter: 9, skipLines: 0 };
+    } else {
+        return { format: 'csv', delimiter: 44, skipLines: 0 };
+    }
+};
+
 // JS Butterworth Low-pass (2nd Order IIR)
 const jsButterworthLP = (data: Float64Array, out: Float64Array, cutoff: number, fs: number) => {
     const n = data.length;
@@ -286,7 +313,117 @@ self.onmessage = async (e) => {
       wasmMemory = wasm.memory;
       const engine = new SciEngine();
 
+      // Generate test data for IO benchmarks
+      const generateCSVData = (rows: number, cols: number): string => {
+        let csv = '';
+        // Header
+        csv += Array.from({ length: cols }, (_, i) => `Column${i + 1}`).join(',') + '\n';
+        // Data rows
+        for (let i = 0; i < rows; i++) {
+          const row = Array.from({ length: cols }, (_, j) => 
+            (Math.random() * 1000).toFixed(6)
+          ).join(',');
+          csv += row + '\n';
+        }
+        return csv;
+      };
+
+      const generateMPTData = (rows: number): string => {
+        let content = '';
+        // Metadata header (60 lines)
+        for (let i = 0; i < 60; i++) {
+          content += `# Metadata line ${i + 1}\n`;
+        }
+        // Data header
+        content += 'Time/s\tEwe/V\tI/mA\tCycle\tIndex\n';
+        // Data rows
+        for (let i = 0; i < rows; i++) {
+          const time = (i * 0.1).toFixed(6);
+          const voltage = (2.5 + Math.sin(i * 0.01) * 0.5).toFixed(6);
+          const current = (Math.random() * 10 - 5).toFixed(6);
+          content += `${time}\t${voltage}\t${current}\t1\t${i}\n`;
+        }
+        return content;
+      };
+
       const benchmarks = [
+        {
+          id: 'io_csv_small',
+          name: 'CSV Parsing (10K rows × 5 cols)',
+          iterations: 10,
+          setup: () => {
+            const csvText = generateCSVData(10000, 5);
+            const csvBytes = new TextEncoder().encode(csvText);
+            
+            // ZERO-COPY: Pre-load data into WASM memory (like N-Body does)
+            const ptr = allocParseBuffer(csvBytes.length);
+            const wasmView = new Uint8Array(wasmMemory.buffer, ptr, csvBytes.length);
+            wasmView.set(csvBytes);  // One-time copy in setup
+            
+            return {
+              wasm: () => parseBufferInPlace(44, 1),  // Skip header, NO data transfer during bench!
+              js: () => jsParseCSV(csvText)
+            };
+          }
+        },
+        {
+          id: 'io_csv_large',
+          name: 'CSV Parsing (100K rows × 8 cols)',
+          iterations: 5,
+          setup: () => {
+            const csvText = generateCSVData(100000, 8);
+            const csvBytes = new TextEncoder().encode(csvText);
+            
+            // ZERO-COPY: Pre-load data into WASM memory
+            const ptr = allocParseBuffer(csvBytes.length);
+            const wasmView = new Uint8Array(wasmMemory.buffer, ptr, csvBytes.length);
+            wasmView.set(csvBytes);
+            
+            return {
+              wasm: () => parseBufferInPlace(44, 1),
+              js: () => jsParseCSV(csvText)
+            };
+          }
+        },
+        {
+          id: 'io_mpt',
+          name: 'MPT File Processing (50K rows with headers)',
+          iterations: 5,
+          setup: () => {
+            const mptText = generateMPTData(50000);
+            const mptBytes = new TextEncoder().encode(mptText);
+            
+            // ZERO-COPY: Pre-load data into WASM memory
+            const ptr = allocParseBuffer(mptBytes.length);
+            const wasmView = new Uint8Array(wasmMemory.buffer, ptr, mptBytes.length);
+            wasmView.set(mptBytes);
+            
+            return {
+              wasm: () => parseBufferInPlace(9, 61),  // Tab delimiter, skip 60 header + 1 column header
+              js: () => jsParseMPT(mptText)
+            };
+          }
+        },
+        {
+          id: 'io_format_detection',
+          name: 'Format Detection (CSV vs TSV)',
+          iterations: 50,
+          setup: () => {
+            const csvHeader = new TextEncoder().encode('a,b,c\n1,2,3\n4,5,6');
+            const tsvHeader = new TextEncoder().encode('a\tb\tc\n1\t2\t3\n4\t5\t6');
+            
+            return {
+              wasm: () => {
+                sniffFormat(csvHeader);
+                sniffFormat(tsvHeader);
+              },
+              js: () => {
+                jsSniffFormat(csvHeader);
+                jsSniffFormat(tsvHeader);
+              }
+            };
+          }
+        },
         {
           id: 'nbody',
           name: 'N-Body Turbo (f32x4 SIMD vs f32 JS)',

@@ -14,3 +14,4 @@ Welcome to the SciMath WASM API Reference. This library provides high-performanc
 - [Complex Numbers](/api/complex) - Complex number arithmetic
 - [Calculus](/api/calculus) - Numerical integration and differentiation
 - [Unit Conversions](/api/units) - Physical unit conversions
+- [File I/O](/api/io) - Scientific data file parsing (CSV, Excel, auto-detection)

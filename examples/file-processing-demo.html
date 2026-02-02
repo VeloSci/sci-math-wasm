@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sci-Math-WASM File Processing Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .upload-area {
+            border: 2px dashed #3498db;
+            border-radius: 6px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            transition: background-color 0.3s;
+        }
+        .upload-area:hover {
+            background-color: #f8f9fa;
+        }
+        .upload-area.dragover {
+            background-color: #e3f2fd;
+            border-color: #1976d2;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #2980b9;
+        }
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            display: none;
+        }
+        .format-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .info-card {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .info-card h3 {
+            margin-top: 0;
+            color: #3498db;
+        }
+        pre {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            max-height: 300px;
+        }
+        .tabs {
+            display: flex;
+            margin: 20px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: #eee;
+            border: none;
+            margin-right: 5px;
+            border-radius: 4px 4px 0 0;
+        }
+        .tab.active {
+            background: #3498db;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .progress-bar {
+            height: 20px;
+            background: #ecf0f1;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+            display: none;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #3498db;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .error {
+            color: #e74c3c;
+            background: #fadbd8;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            display: none;
+        }
+        .success {
+            color: #27ae60;
+            background: #d5f5e3;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 Sci-Math-WASM File Processing Demo</h1>
+        
+        <p>This demo showcases high-performance scientific file processing using WebAssembly.</p>
+        
+        <div class="upload-area" id="dropZone">
+            <p>Drag & drop a scientific data file here</p>
+            <p>or</p>
+            <button class="btn" onclick="document.getElementById('fileInput').click()">
+                Choose File
+            </button>
+            <input type="file" id="fileInput" accept=".csv,.tsv,.txt,.dat,.mpt,.xlsx,.xls">
+        </div>
+        
+        <div class="progress-bar" id="progressBar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        
+        <div class="error" id="errorMessage"></div>
+        <div class="success" id="successMessage"></div>
+        
+        <div class="results" id="results">
+            <h2>Processing Results</h2>
+            
+            <div class="format-info">
+                <div class="info-card">
+                    <h3>📁 Format Detection</h3>
+                    <p><strong>Type:</strong> <span id="formatType">-</span></p>
+                    <p><strong>Confidence:</strong> <span id="confidence">-</span></p>
+                </div>
+                <div class="info-card">
+                    <h3>⚙️ Parser Settings</h3>
+                    <p><strong>Delimiter:</strong> <span id="delimiter">-</span></p>
+                    <p><strong>Skip Lines:</strong> <span id="skipLines">-</span></p>
+                </div>
+                <div class="info-card">
+                    <h3>📊 Data Summary</h3>
+                    <p><strong>Rows:</strong> <span id="rowCount">-</span></p>
+                    <p><strong>Columns:</strong> <span id="colCount">-</span></p>
+                </div>
+                <div class="info-card">
+                    <h3>⚡ Performance</h3>
+                    <p><strong>Processing Time:</strong> <span id="processTime">-</span></p>
+                    <p><strong>File Size:</strong> <span id="fileSize">-</span></p>
+                </div>
+            </div>
+            
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('preview')">Preview</button>
+                <button class="tab" onclick="showTab('raw')">Raw Data</button>
+                <button class="tab" onclick="showTab('stats')">Statistics</button>
+            </div>
+            
+            <div class="tab-content active" id="previewTab">
+                <h3>Data Preview</h3>
+                <div id="dataPreview">Loading...</div>
+            </div>
+            
+            <div class="tab-content" id="rawTab">
+                <h3>First 10 Rows</h3>
+                <pre id="rawData"></pre>
+            </div>
+            
+            <div class="tab-content" id="statsTab">
+                <h3>Numeric Statistics</h3>
+                <div id="statistics">No numeric data found</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import init, {
+            TextStreamer,
+            readExcelFile,
+            getExcelInfo,
+            sniffFormat,
+            detectDelimiter
+        } from '../pkg/web/sci_math_wasm.js';
+
+        // Initialize WASM
+        let wasmReady = false;
+        init().then(() => {
+            wasmReady = true;
+            console.log('WASM initialized');
+        }).catch(err => {
+            showError('Failed to initialize WASM: ' + err.message);
+        });
+
+        // DOM Elements
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const results = document.getElementById('results');
+
+        // Event Listeners
+        fileInput.addEventListener('change', handleFileSelect);
+        dropZone.addEventListener('dragover', handleDragOver);
+        dropZone.addEventListener('drop', handleDrop);
+        dropZone.addEventListener('dragleave', handleDragLeave);
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        }
+
+        async function processFile(file) {
+            if (!wasmReady) {
+                showError('WASM not ready yet. Please wait.');
+                return;
+            }
+
+            hideMessages();
+            showProgress(0);
+            
+            const startTime = performance.now();
+            
+            try {
+                // Read file
+                const arrayBuffer = await file.arrayBuffer();
+                const fileBytes = new Uint8Array(arrayBuffer);
+                
+                // Show file info
+                document.getElementById('fileSize').textContent = 
+                    `${(file.size / 1024 / 1024).toFixed(2)} MB`;
+                
+                // Auto-detect format
+                const header = fileBytes.slice(0, Math.min(2048, fileBytes.length));
+                const hint = sniffFormat(header);
+                
+                // Display format info
+                document.getElementById('formatType').textContent = hint.format;
+                document.getElementById('confidence').textContent = 
+                    `${(hint.confidence * 100).toFixed(1)}%`;
+                document.getElementById('delimiter').textContent = 
+                    hint.delimiter ? String.fromCharCode(hint.delimiter) : 'None';
+                document.getElementById('skipLines').textContent = hint.skipLines;
+                
+                let data;
+                
+                // Process based on format
+                if (hint.isBinary) {
+                    // Binary formats (Excel)
+                    data = readExcelFile(fileBytes);
+                } else {
+                    // Text formats
+                    const streamer = new TextStreamer()
+                        .setDelimiter(hint.delimiter || 44) // Default to comma
+                        .setSkipLines(hint.skipLines)
+                        .setCommentChar(hint.commentChar || 0);
+                    
+                    // For demo, process entire file at once
+                    data = streamer.processChunk(fileBytes);
+                    const final = streamer.finalize();
+                    data = [...data, ...final];
+                }
+                
+                const endTime = performance.now();
+                const processTime = endTime - startTime;
+                
+                // Display results
+                document.getElementById('processTime').textContent = 
+                    `${processTime.toFixed(2)} ms`;
+                document.getElementById('rowCount').textContent = data.length;
+                document.getElementById('colCount').textContent = 
+                    data.length > 0 ? data[0].length : 0;
+                
+                // Show data preview
+                showDataPreview(data);
+                showRawData(data);
+                showStatistics(data);
+                
+                showSuccess(`Successfully processed ${file.name}`);
+                results.style.display = 'block';
+                
+            } catch (error) {
+                showError(`Processing failed: ${error.message}`);
+            } finally {
+                hideProgress();
+            }
+        }
+
+        function showDataPreview(data) {
+            if (data.length === 0) {
+                document.getElementById('dataPreview').innerHTML = '<p>No data found</p>';
+                return;
+            }
+            
+            // Create table preview (first 5 rows, first 5 columns)
+            const maxRows = Math.min(5, data.length);
+            const maxCols = data[0] ? Math.min(5, data[0].length) : 0;
+            
+            let html = '<table style="width:100%;border-collapse:collapse;">';
+            html += '<thead><tr>';
+            for (let j = 0; j < maxCols; j++) {
+                html += `<th style="border:1px solid #ddd;padding:8px;background:#f8f9fa;">Column ${j+1}</th>`;
+            }
+            html += '</tr></thead><tbody>';
+            
+            for (let i = 0; i < maxRows; i++) {
+                html += '<tr>';
+                for (let j = 0; j < maxCols; j++) {
+                    const value = data[i][j] || '';
+                    html += `<td style="border:1px solid #ddd;padding:6px;">${escapeHtml(value)}</td>`;
+                }
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+            
+            if (data.length > 5) {
+                html += `<p><em>Showing first 5 rows of ${data.length} total</em></p>`;
+            }
+            
+            document.getElementById('dataPreview').innerHTML = html;
+        }
+
+        function showRawData(data) {
+            const maxRows = Math.min(10, data.length);
+            let text = '';
+            
+            for (let i = 0; i < maxRows; i++) {
+                text += JSON.stringify(data[i]) + '\n';
+            }
+            
+            if (data.length > 10) {
+                text += `... (${data.length - 10} more rows)`;
+            }
+            
+            document.getElementById('rawData').textContent = text;
+        }
+
+        function showStatistics(data) {
+            if (data.length === 0) {
+                document.getElementById('statistics').innerHTML = '<p>No data to analyze</p>';
+                return;
+            }
+            
+            // Try to convert to numbers and compute statistics
+            const numericData = [];
+            for (let i = 0; i < Math.min(1000, data.length); i++) { // Sample first 1000 rows
+                const row = data[i];
+                for (let j = 0; j < row.length; j++) {
+                    const val = parseFloat(row[j]);
+                    if (!isNaN(val)) {
+                        if (!numericData[j]) numericData[j] = [];
+                        numericData[j].push(val);
+                    }
+                }
+            }
+            
+            if (numericData.length === 0) {
+                document.getElementById('statistics').innerHTML = '<p>No numeric columns found</p>';
+                return;
+            }
+            
+            let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:15px;">';
+            
+            numericData.forEach((col, idx) => {
+                if (col.length === 0) return;
+                
+                const mean = col.reduce((a, b) => a + b, 0) / col.length;
+                const min = Math.min(...col);
+                const max = Math.max(...col);
+                const std = Math.sqrt(col.reduce((sq, n) => sq + Math.pow(n - mean, 2), 0) / col.length);
+                
+                html += `
+                    <div style="background:white;padding:15px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+                        <h4 style="margin-top:0;color:#3498db;">Column ${idx + 1}</h4>
+                        <p><strong>Count:</strong> ${col.length}</p>
+                        <p><strong>Mean:</strong> ${mean.toFixed(4)}</p>
+                        <p><strong>Min:</strong> ${min.toFixed(4)}</p>
+                        <p><strong>Max:</strong> ${max.toFixed(4)}</p>
+                        <p><strong>Std Dev:</strong> ${std.toFixed(4)}</p>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            document.getElementById('statistics').innerHTML = html;
+        }
+
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(`${tabName}Tab`).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function showProgress(percent) {
+            progressBar.style.display = 'block';
+            progressFill.style.width = percent + '%';
+        }
+
+        function hideProgress() {
+            progressBar.style.display = 'none';
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            successMessage.style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+        }
+
+        function hideMessages() {
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
