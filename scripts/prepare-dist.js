@@ -65,9 +65,14 @@ const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf8'));
 // Set files explicitly to include pkg
 pkg.files = ['pkg', 'README.md', 'LICENSE'];
 
-// Ensure main/module/types point to the correct location relative to root (already correct in src package.json)
-// but since we are publishing 'dist' as root, the paths './pkg/web/...' are still valid inside 'dist'
-// because we constructed 'dist/pkg/web/...'.
+// If running for GitHub Packages (Canary), update name and publishConfig
+if (process.argv.includes('--gh-package')) {
+    console.log('Applying GitHub Packages configuration (Canary)...');
+    pkg.name = '@VeloSci/sci-math-wasm';
+    pkg.publishConfig = {
+        registry: 'https://npm.pkg.github.com'
+    };
+}
 
 // Remove scripts and devDependencies to clean up
 delete pkg.scripts;
