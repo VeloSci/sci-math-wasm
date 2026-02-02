@@ -112,9 +112,88 @@ jobs:
       - name: Fix Package.json
         run: node scripts/fix-pkg.cjs
 
+      - name: Prepare Hybrid Package
+        run: node scripts/prepare-dist.js
+
       - name: Publish to GitHub Packages
         run: |
-          cd pkg/node
+          cd dist
           npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-npm:
+    needs: publish-canary
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to push tags
+      id-token: write 
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for tags
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Check if version exists
+        id: check_version
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          TAG_NAME="v$PACKAGE_VERSION"
+          
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Tag $TAG_NAME already exists. Skipping publish."
+            echo "should_publish=false" >> $GITHUB_OUTPUT
+          else
+            echo "Tag $TAG_NAME does not exist. Proceeding with publish."
+            echo "should_publish=true" >> $GITHUB_OUTPUT
+            echo "version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install dependencies
+        if: steps.check_version.outputs.should_publish == 'true'
+        run: pnpm install
+
+      - name: Build WASM (All Targets)
+        if: steps.check_version.outputs.should_publish == 'true'
+        run: pnpm wasm:build
+        env:
+          RUSTFLAGS: "-C target-feature=+atomics,+bulk-memory,+mutable-globals,+simd128"
+
+      - name: Prepare Hybrid Package
+        if: steps.check_version.outputs.should_publish == 'true'
+        run: node scripts/prepare-dist.js
+
+      - name: Publish to NPM
+        if: steps.check_version.outputs.should_publish == 'true'
+        run: |
+          cd dist
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Tag Release
+        if: steps.check_version.outputs.should_publish == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag v${{ steps.check_version.outputs.version }}
+          git push origin v${{ steps.check_version.outputs.version }}
