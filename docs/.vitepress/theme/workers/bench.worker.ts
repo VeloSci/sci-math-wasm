@@ -237,19 +237,45 @@ const jsDeconvRL = (data: Float64Array, kernel: Float64Array, iterations: number
     return current;
 }
 
-// JS File Processing Implementations
-const jsParseCSV = (text: string): string[][] => {
-    return text.trim().split('\n').map(line => line.split(','));
-};
-
-const jsParseTSV = (text: string): string[][] => {
-    return text.trim().split('\n').map(line => line.split('\t'));
-};
-
-const jsParseMPT = (text: string): string[][] => {
+// JS File Processing Implementations - FASTER & REALISTIC (Numeric)
+const jsParseCSV = (text: string): Float64Array => {
     const lines = text.trim().split('\n');
-    // Skip first 60 lines (metadata) + 1 header line
-    return lines.slice(61).map(line => line.split('\t'));
+    const result = new Float64Array(lines.length * 5); // Estimado
+    let idx = 0;
+    for (let i = 0; i < lines.length; i++) {
+        const parts = lines[i].split(',');
+        for (let j = 0; j < parts.length; j++) {
+            result[idx++] = parseFloat(parts[j]);
+        }
+    }
+    return result;
+};
+
+const jsParseTSV = (text: string): Float64Array => {
+    const lines = text.trim().split('\n');
+    const result = new Float64Array(lines.length * 5);
+    let idx = 0;
+    for (let i = 0; i < lines.length; i++) {
+        const parts = lines[i].split('\t');
+        for (let j = 0; j < parts.length; j++) {
+            result[idx++] = parseFloat(parts[j]);
+        }
+    }
+    return result;
+};
+
+const jsParseMPT = (text: string): Float64Array => {
+    const lines = text.trim().split('\n');
+    // Skip first 61 lines
+    const result = new Float64Array((lines.length - 61) * 3);
+    let idx = 0;
+    for (let i = 61; i < lines.length; i++) {
+        const parts = lines[i].split('\t');
+        for (let j = 0; j < parts.length; j++) {
+            result[idx++] = parseFloat(parts[j]);
+        }
+    }
+    return result;
 };
 
 const jsSniffFormat = (header: Uint8Array): { format: string; delimiter: number; skipLines: number } => {
@@ -354,33 +380,40 @@ self.onmessage = async (e) => {
           setup: () => {
             const csvText = generateCSVData(10000, 5);
             const csvBytes = new TextEncoder().encode(csvText);
-            
-            // ZERO-COPY: Pre-load data into WASM memory (like N-Body does)
-            const ptr = allocParseBuffer(csvBytes.length);
-            const wasmView = new Uint8Array(wasmMemory.buffer, ptr, csvBytes.length);
-            wasmView.set(csvBytes);  // One-time copy in setup
+            const streamer = new TextStreamer().setDelimiter(44).setSkipLines(1);
             
             return {
-              wasm: () => parseBufferInPlace(44, 1),  // Skip header, NO data transfer during bench!
+              wasm: () => streamer.processNumericChunk(csvBytes),
               js: () => jsParseCSV(csvText)
             };
           }
         },
         {
-          id: 'io_csv_large',
+          id: 'io_csv_numeric_large',
           name: 'CSV Parsing (100K rows × 8 cols)',
           iterations: 5,
           setup: () => {
             const csvText = generateCSVData(100000, 8);
             const csvBytes = new TextEncoder().encode(csvText);
-            
-            // ZERO-COPY: Pre-load data into WASM memory
-            const ptr = allocParseBuffer(csvBytes.length);
-            const wasmView = new Uint8Array(wasmMemory.buffer, ptr, csvBytes.length);
-            wasmView.set(csvBytes);
+            const streamer = new TextStreamer().setDelimiter(44).setSkipLines(1);
             
             return {
-              wasm: () => parseBufferInPlace(44, 1),
+              wasm: () => streamer.processNumericChunk(csvBytes),
+              js: () => jsParseCSV(csvText)
+            };
+          }
+        },
+        {
+          id: 'io_csv_columnar',
+          name: 'CSV Columnar (100K rows × 8 cols)',
+          iterations: 5,
+          setup: () => {
+            const csvText = generateCSVData(100000, 8);
+            const csvBytes = new TextEncoder().encode(csvText);
+            const streamer = new TextStreamer().setDelimiter(44).setSkipLines(1);
+            
+            return {
+              wasm: () => streamer.processColumnarChunk(csvBytes),
               js: () => jsParseCSV(csvText)
             };
           }
@@ -392,14 +425,10 @@ self.onmessage = async (e) => {
           setup: () => {
             const mptText = generateMPTData(50000);
             const mptBytes = new TextEncoder().encode(mptText);
-            
-            // ZERO-COPY: Pre-load data into WASM memory
-            const ptr = allocParseBuffer(mptBytes.length);
-            const wasmView = new Uint8Array(wasmMemory.buffer, ptr, mptBytes.length);
-            wasmView.set(mptBytes);
+            const streamer = new TextStreamer().setDelimiter(9).setSkipLines(61);
             
             return {
-              wasm: () => parseBufferInPlace(9, 61),  // Tab delimiter, skip 60 header + 1 column header
+              wasm: () => streamer.processColumnarChunk(mptBytes),
               js: () => jsParseMPT(mptText)
             };
           }
@@ -407,7 +436,7 @@ self.onmessage = async (e) => {
         {
           id: 'io_format_detection',
           name: 'Format Detection (CSV vs TSV)',
-          iterations: 50,
+          iterations: 100,
           setup: () => {
             const csvHeader = new TextEncoder().encode('a,b,c\n1,2,3\n4,5,6');
             const tsvHeader = new TextEncoder().encode('a\tb\tc\n1\t2\t3\n4\t5\t6');
