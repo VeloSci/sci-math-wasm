@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onUnmounted, nextTick } from 'vue'
+import { ref, onUnmounted, nextTick, computed } from 'vue'
+import './BenchmarkRunner.css'
 
 interface BenchResult {
   id: string;
@@ -11,442 +12,171 @@ interface BenchResult {
 }
 
 const results = ref<Record<string, BenchResult>>({
-  // IO Module Benchmarks
   'io_csv_small': { id: 'io_csv_small', name: 'CSV Parsing (10K rows)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
-  'io_csv_large': { id: 'io_csv_large', name: 'CSV Parsing (100K rows)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
+  'io_csv_numeric_large': { id: 'io_csv_numeric_large', name: 'CSV Parsing (100K rows)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
+  'io_csv_columnar': { id: 'io_csv_columnar', name: 'CSV Columnar (100K rows)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
   'io_mpt': { id: 'io_mpt', name: 'MPT File Processing', js: 0, wasm: 0, ratio: 0, status: 'pending' },
   'io_format_detection': { id: 'io_format_detection', name: 'Format Detection', js: 0, wasm: 0, ratio: 0, status: 'pending' },
-  
-  // Mathematical Computing Benchmarks
   'nbody': { id: 'nbody', name: 'N-Body Turbo (f32x4 SIMD)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
   'calculus': { id: 'calculus', name: 'Calculus (Diff+Integ 1M pts)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
   'deconvolution': { id: 'deconvolution', name: 'Deconvolution (100k pts)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
   'filters': { id: 'filters', name: 'Butterworth Filter (1M pts)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
-  'analysis_fitting': { id: 'analysis_fitting', name: 'Analysis & Fitting (100k pts)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
+  'analysis_fitting': { id: 'analysis_fitting', name: 'Analysis & Fitting (1M pts)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
   'fft': { id: 'fft', name: 'FFT (65k Points)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
   'matmul': { id: 'matmul', name: 'Matrix Matmul (f64 Blocked)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
 })
 
 const logs = ref<string[]>([])
 const isRunning = ref(false)
+const finished = ref(false)
+const currentTaskId = ref<string | null>(null)
 let worker: Worker | null = null
 
+const activeTask = computed(() => currentTaskId.value ? results.value[currentTaskId.value] : null)
+const sortedResults = computed(() => Object.values(results.value).filter(r => r.status === 'done').sort((a,b) => b.ratio - a.ratio))
+const maxRatio = computed(() => {
+  const vals = sortedResults.value.map(r => r.ratio)
+  return vals.length ? Math.max(...vals).toFixed(1) : '0.0'
+})
+
 const addLog = (msg: string) => {
-  logs.value.push(`[${new Date().toLocaleTimeString()}] ${msg}`)
+  logs.value.push(msg)
   if (logs.value.length > 100) logs.value.shift()
-  
   nextTick(() => {
-    const el = document.getElementById('bench-logs')
-    if (el) {
-      el.scrollTo({
-        top: el.scrollHeight,
-        behavior: 'smooth'
-      })
-    }
+    const el = document.getElementById('bench-terminal')
+    if (el) el.scrollTop = el.scrollHeight
   })
 }
 
 const startBenchmarks = () => {
   if (isRunning.value) return
-  
   isRunning.value = true
+  finished.value = false
   logs.value = []
-  // Reset results
   for(const key in results.value) {
     results.value[key].status = 'pending'
-    results.value[key].js = 0
-    results.value[key].wasm = 0
     results.value[key].ratio = 0
   }
 
-  addLog('Initializing Worker...')
-  
-  // Create worker using Vite's ?worker import
-  // Note: in VitePress, we might need a direct relative path or a more complex setup
-  // but usually new Worker(new URL(..., import.meta.url)) works.
-  worker = new Worker(new URL('../workers/bench.worker.ts', import.meta.url), {
-    type: 'module'
-  })
-
+  worker = new Worker(new URL('../workers/bench.worker.ts', import.meta.url), { type: 'module' })
   worker.onmessage = (e) => {
     const { type, message, id, status, js, wasm, ratio } = e.data
-
     switch (type) {
-      case 'log':
-        addLog(message)
-        break
-      case 'status':
-        if (results.value[id]) results.value[id].status = status
-        break
-      case 'result':
-        if (results.value[id]) {
-          results.value[id].js = js
-          results.value[id].wasm = wasm
-          results.value[id].ratio = ratio
-          results.value[id].status = 'done'
-        }
-        break
+      case 'log': addLog(message); break
+      case 'status': if (id) { currentTaskId.value = id; results.value[id].status = status; } break
+      case 'result': if (results.value[id]) results.value[id] = { ...results.value[id], js, wasm, ratio, status: 'done' }; break
       case 'done':
-        isRunning.value = false
-        worker?.terminate()
-        worker = null
+        isRunning.value = false; finished.value = true; currentTaskId.value = null; worker?.terminate();
         break
-      case 'error':
-        addLog(`ERROR: ${message}`)
-        isRunning.value = false
-        worker?.terminate()
-        break
+      case 'error': addLog(`CRITICAL ERROR: ${message}`); isRunning.value = false; worker?.terminate(); break
     }
   }
-
   worker.postMessage({ type: 'start' })
 }
 
-onUnmounted(() => {
-  worker?.terminate()
-})
+onUnmounted(() => worker?.terminate())
 </script>
 
 <template>
-  <div class="bench-container">
-    <div class="bench-header">
-      <div class="header-content">
-        <h2>Live Execution Lab <span class="simd-tag">SIMD ENABLED</span></h2>
-        <p>High-performance scientific computing and file processing benchmarks running in a background Web Worker with WASM acceleration.</p>
+  <div class="lab-viewport">
+    <div class="lab-nav">
+      <div class="brand">
+        <svg class="lab-icon" viewBox="0 0 64 64" fill="none">
+          <defs>
+            <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#3b82f6"/><stop offset="100%" style="stop-color:#00f2ff"/>
+            </linearGradient>
+            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <path d="M32 4L56 18V46L32 60L8 46V18L32 4Z" stroke="url(#logoGrad)" stroke-width="2.5" fill="none" filter="url(#glow)"/>
+          <path d="M22 24 L42 24 L32 32 L42 40 L22 40" stroke="url(#logoGrad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+          <circle cx="32" cy="7" r="1.5" fill="#00f2ff" filter="url(#glow)"/>
+        </svg>
+        <span>VELOSCI <span class="highlight">SINGULARITY</span></span>
       </div>
-      <button @click="startBenchmarks" :disabled="isRunning" class="run-button" :class="{ 'is-running': isRunning }">
-        <span v-if="isRunning" class="spinner"></span>
-        <span>{{ isRunning ? 'Executing...' : 'Start Heavy Compute' }}</span>
+      <button @click="startBenchmarks" :disabled="isRunning" class="btn-primary" :class="{ pulse: isRunning }">
+        {{ isRunning ? 'SINGULARITY ACTIVE' : 'IGNITE CORE' }}
       </button>
     </div>
 
-    <div class="lab-layout">
-      <!-- Logs Panel -->
-      <div class="logs-panel">
-        <div class="panel-header">Execution Logs</div>
-        <div id="bench-logs" class="logs-content">
-          <div v-if="logs.length === 0" class="empty-logs">System idle. Waiting for command...</div>
-          <div v-for="(log, i) in logs" :key="i" class="log-entry">{{ log }}</div>
+    <div class="main-stage">
+      <transition name="fade">
+        <div v-if="isRunning && activeTask" class="execution-wrapper">
+          <div class="visual-center" >
+            <div class="logo-wrapper">
+              <svg class="app-logo-anim" viewBox="0 0 64 64" fill="none">
+                <path d="M32 4L56 18V46L32 60L8 46V18L32 4Z" stroke="url(#logoGrad)" stroke-width="2.5" fill="none" class="hexagon-path"/>
+                <path d="M22 24 L42 24 L32 32 L42 40 L22 40" stroke="url(#logoGrad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="sigma-path"/>
+                <circle cx="32" cy="7" r="3" fill="#00f2ff" class="logo-electron"/>
+              </svg>
+              <div class="scanning-beam"></div>
+            </div>
+            <div class="task-info">
+              <div class="running-label">EXECUTING KERNEL</div>
+              <div class="task-name">{{ activeTask.name }}</div>
+              <div class="thread-count">16-THREAD PARALLEL CLUSTER ACTIVE</div>
+            </div>
+          </div>
         </div>
-      </div>
+      </transition>
 
-      <!-- Results Panel -->
-      <div class="results-panel">
-        <!-- IO Module Benchmarks Section -->
-        <div class="category-header">📁 File Processing Benchmarks</div>
-        <div v-for="res in Object.values(results).filter(r => r.id.startsWith('io_'))" 
-             :key="res.id" 
-             class="result-card" 
-             :class="{ 'is-active': res.status === 'running', 'is-done': res.status === 'done' }">
-          <div class="card-top">
-            <span class="card-name">{{ res.name }}</span>
-            <span v-if="res.status === 'done'" class="ratio-badge">{{ res.ratio.toFixed(1) }}x</span>
-            <span v-else-if="res.status === 'running'" class="running-tag">RUNNING</span>
-          </div>
-          
-          <div class="bars">
-            <div class="bar-group">
-              <div class="bar-label">JS</div>
-              <div class="bar-track">
-                <div class="bar js-bar" :style="{ width: res.status !== 'pending' ? '100%' : '0%' }"></div>
-                <span v-if="res.js > 0" class="bar-val">{{ res.js.toFixed(3) }}ms</span>
+      <transition name="fade">
+        <div v-if="finished" id="scroll-container" class="results-dashboard custom-scroll">
+          <div class="scroll-content">
+            <div class="animated-sticky-header">
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <div class="stat-label">MAX PERFORMANCE RATIO</div>
+                  <div class="stat-value">{{ maxRatio }}x</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">ALGORITHMS VERIFIED</div>
+                  <div class="stat-value">{{ sortedResults.length }}</div>
+                </div>
+              </div>
+              <div class="bench-header">
+                <div class="bench-row header">
+                  <div class="col-algo">ALGORITHM</div>
+                  <div class="col-js text-right">JS RUNTIME</div>
+                  <div class="col-wasm text-right">WASM CORE</div>
+                  <div class="col-accel text-right">ACCELERATION</div>
+                </div>
               </div>
             </div>
-            <div class="bar-group">
-              <div class="bar-label">WASM</div>
-              <div class="bar-track">
-                <div class="bar wasm-bar" :style="{ width: res.status === 'done' ? (res.wasm / res.js * 100) + '%' : '0%' }"></div>
-                <span v-if="res.wasm > 0" class="bar-val">{{ res.wasm.toFixed(3) }}ms</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Mathematical Computing Benchmarks Section -->
-        <div class="category-header">🧮 Mathematical Computing Benchmarks</div>
-        <div v-for="res in Object.values(results).filter(r => !r.id.startsWith('io_'))" 
-             :key="res.id" 
-             class="result-card" 
-             :class="{ 'is-active': res.status === 'running', 'is-done': res.status === 'done' }">
-          <div class="card-top">
-            <span class="card-name">{{ res.name }}</span>
-            <span v-if="res.status === 'done'" class="ratio-badge">{{ res.ratio.toFixed(1) }}x</span>
-            <span v-else-if="res.status === 'running'" class="running-tag">RUNNING</span>
-          </div>
-          
-          <div class="bars">
-            <div class="bar-group">
-              <div class="bar-label">JS</div>
-              <div class="bar-track">
-                <div class="bar js-bar" :style="{ width: res.status !== 'pending' ? '100%' : '0%' }"></div>
-                <span v-if="res.js > 0" class="bar-val">{{ res.js.toFixed(3) }}ms</span>
-              </div>
-            </div>
-            <div class="bar-group">
-              <div class="bar-label">WASM</div>
-              <div class="bar-track">
-                <div class="bar wasm-bar" :style="{ width: res.status === 'done' ? (res.wasm / res.js * 100) + '%' : '0%' }"></div>
-                <span v-if="res.wasm > 0" class="bar-val">{{ res.wasm.toFixed(3) }}ms</span>
+            <div class="bench-body">
+              <div v-for="res in sortedResults" :key="res.id" class="bench-row" :class="{ 'highlight-row': res.ratio > 20 }">
+                <div class="col-algo font-bold">{{ res.name }}</div>
+                <div class="col-js text-right opacity-60 font-mono">{{ res.js.toFixed(3) }}ms</div>
+                <div class="col-wasm text-right font-mono text-brand">{{ res.wasm.toFixed(3) }}ms</div>
+                <div class="col-accel text-right">
+                  <span class="boost-tag" :style="{ background: res.ratio > 20 ? 'var(--glow-green)' : 'var(--glow-blue)' }">{{ res.ratio.toFixed(2) }}x</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
+      </transition>
+      <div v-if="!isRunning && !finished" class="idle-state">
+        <svg class="lab-icon" style="width: 120px; height: 120px; margin-bottom: 2rem; opacity: 0.5" viewBox="0 0 64 64" fill="none">
+          <path d="M32 4L56 18V46L32 60L8 46V18L32 4Z" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" fill="none"/>
+        </svg>
+        <div class="glitch-text">STANDBY</div>
+      </div>
+    </div>
+
+    <div class="lab-terminal">
+      <div class="terminal-header">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <div class="title">IO SYSTEM CONSOLE v0.2.5</div>
+      </div>
+      <div id="bench-terminal" class="terminal-content custom-scroll">
+        <div v-for="(log, i) in logs" :key="i" class="log-line">
+          <span class="prompt" style="color: #00f2ff; margin-right: 10px;">></span> {{ log }}
+        </div>
+        <div v-if="isRunning" class="cursor">_</div>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.bench-container {
-  margin: 2rem 0;
-  background: var(--vp-c-bg-soft);
-  border-radius: 20px;
-  border: 1px solid var(--vp-c-divider);
-  overflow: hidden;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.15);
-}
-
-.bench-header {
-  padding: 2rem;
-  background: var(--vp-c-bg-mute);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid var(--vp-c-divider);
-}
-
-.header-content h2 {
-  margin: 0;
-  font-size: 1.5rem;
-  background: linear-gradient(135deg, var(--vp-c-brand-1), #a855f7);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-weight: 800;
-}
-
-.simd-tag {
-  font-size: 0.6rem;
-  background: #22c55e;
-  color: white;
-  padding: 2px 6px;
-  border-radius: 4px;
-  vertical-align: middle;
-  margin-left: 10px;
-  letter-spacing: 1px;
-}
-
-.header-content p {
-  margin: 0.5rem 0 0;
-  font-size: 0.9rem;
-  color: var(--vp-c-text-2);
-}
-
-.run-button {
-  background: var(--vp-c-brand-1);
-  color: white;
-  padding: 0.8rem 1.5rem;
-  border-radius: 12px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  transition: all 0.3s ease;
-  border: none;
-  cursor: pointer;
-}
-
-.run-button:hover:not(:disabled) {
-  filter: brightness(1.1);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px var(--vp-c-brand-soft);
-}
-
-.run-button.is-running {
-  background: var(--vp-c-bg-mute);
-  color: var(--vp-c-text-2);
-  cursor: wait;
-}
-
-.lab-layout {
-  display: grid;
-  grid-template-columns: 350px 1fr;
-  height: 500px;
-  overflow: hidden;
-}
-
-@media (max-width: 960px) {
-  .lab-layout {
-    grid-template-columns: 1fr;
-    height: auto;
-    overflow: visible;
-  }
-}
-
-.logs-panel {
-  background: #0f172a;
-  border-right: 1px solid var(--vp-c-divider);
-  display: flex;
-  flex-direction: column;
-  min-height: 300px;
-}
-
-.panel-header {
-  padding: 0.8rem 1.2rem;
-  background: #1e293b;
-  color: #94a3b8;
-  font-family: monospace;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.logs-content {
-  flex: 1;
-  padding: 1rem;
-  font-family: 'Fira Code', monospace;
-  font-size: 0.8rem;
-  overflow-y: auto;
-  color: #e2e8f0;
-  scrollbar-width: thin;
-}
-
-.log-entry {
-  margin-bottom: 0.4rem;
-  line-height: 1.4;
-  border-left: 2px solid #334155;
-  padding-left: 0.8rem;
-}
-
-.empty-logs {
-  color: #475569;
-  font-style: italic;
-  text-align: center;
-  margin-top: 2rem;
-}
-
-.results-panel {
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  overflow-y: auto;
-  background: var(--vp-c-bg);
-  scrollbar-width: thin;
-}
-
-.category-header {
-  font-weight: 800;
-  font-size: 1.1rem;
-  color: var(--vp-c-brand-1);
-  margin: 1.5rem 0 0.5rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid var(--vp-c-brand-soft);
-}
-
-.result-card {
-  padding: 1.2rem;
-  border-radius: 12px;
-  background: var(--vp-c-bg-soft);
-  border: 1px solid var(--vp-c-divider);
-  transition: all 0.3s ease;
-  opacity: 0.6;
-}
-
-.result-card.is-active {
-  opacity: 1;
-  border-color: var(--vp-c-brand-1);
-  box-shadow: 0 0 15px var(--vp-c-brand-soft);
-}
-
-.result-card.is-done {
-  opacity: 1;
-}
-
-.card-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.card-name {
-  font-weight: 700;
-  font-size: 0.95rem;
-}
-
-.ratio-badge {
-  background: #22c55e22;
-  color: #22c55e;
-  padding: 2px 8px;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 800;
-}
-
-.running-tag {
-  color: var(--vp-c-brand-1);
-  font-size: 0.7rem;
-  font-weight: 800;
-  animation: pulse 1.5s infinite;
-}
-
-.bars {
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-}
-
-.bar-group {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.bar-label {
-  width: 40px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: var(--vp-c-text-2);
-}
-
-.bar-track {
-  flex: 1;
-  height: 16px;
-  background: var(--vp-c-bg-mute);
-  border-radius: 4px;
-  position: relative;
-  overflow: hidden;
-}
-
-.bar {
-  height: 100%;
-  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.js-bar { background: #94a3b844; }
-.wasm-bar { background: linear-gradient(90deg, var(--vp-c-brand-1), #a855f7); }
-
-.bar-val {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 0.65rem;
-  font-family: monospace;
-  font-weight: 700;
-  color: var(--vp-c-text-1);
-}
-
-.spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-</style>
