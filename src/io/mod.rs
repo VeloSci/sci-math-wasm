@@ -21,6 +21,7 @@
 //! const data = read_excel_file(fileBytes);
 //! ```
 
+pub mod parallel_core;
 pub mod text;
 pub mod binary;
 pub mod sniffers;
