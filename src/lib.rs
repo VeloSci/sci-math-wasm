@@ -16,7 +16,7 @@ pub mod units;
 pub mod utils;
 pub mod fast_math;
 #[cfg(feature = "threads")]
-pub mod engine;
+pub mod engine_core;
 pub mod fft;
 pub mod analysis;
 pub mod fitting;
