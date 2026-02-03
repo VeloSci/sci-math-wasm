@@ -451,7 +451,7 @@ dependencies = [
 
 [[package]]
 name = "sci-math-wasm"
-version = "0.2.5"
+version = "0.2.6"
 dependencies = [
  "calamine",
  "console_error_panic_hook",
