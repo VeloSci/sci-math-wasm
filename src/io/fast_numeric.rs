@@ -50,7 +50,7 @@ pub fn parse_buffer_in_place(delimiter: u8, skip_lines: usize) -> usize {
     let input = PARSE_BUFFER.lock().unwrap();
     let data = &input[..];
     
-    // Step 1: Find all line boundaries using SIMD
+    // Step 1: Detect line boundaries
     let mut line_starts = vec![0usize];
     line_starts.extend(memchr_iter(b'\n', data).map(|pos| pos + 1));
     
@@ -60,17 +60,37 @@ pub fn parse_buffer_in_place(delimiter: u8, skip_lines: usize) -> usize {
         return 0;
     }
     
-    // Step 2: Process lines in parallel
-    let values: Vec<f64> = line_starts[skip_lines..]
-        .par_windows(2)
-        .flat_map(|window| {
-            let start = window[0];
-            let end = window[1].saturating_sub(1);
-            if start >= end { return vec![]; }
-            
-            let line = &data[start..end];
-            parse_line_fast(line, delimiter)
+    // Step 2: Parallel processing with large chunks to avoid allocation overhead
+    let remaining_lines = &line_starts[skip_lines..];
+    let num_lines = remaining_lines.len();
+    let num_threads = rayon::current_num_threads();
+    let lines_per_chunk = (num_lines / num_threads).max(1024);
+
+    let values: Vec<f64> = remaining_lines.par_chunks(lines_per_chunk)
+        .map(|chunk| {
+            let mut chunk_values = Vec::with_capacity(chunk.len() * 8);
+            for window in chunk.windows(2) {
+                let s = window[0];
+                let e = window[1].saturating_sub(1);
+                if s < e {
+                    let line = &data[s..e];
+                    for field in line.split(|&b| b == delimiter) {
+                        let mut fs = 0;
+                        while fs < field.len() && field[fs].is_ascii_whitespace() { fs += 1; }
+                        let mut fe = field.len();
+                        while fe > fs && field[fe - 1].is_ascii_whitespace() { fe -= 1; }
+                        if fs < fe {
+                            chunk_values.push(fast_float::parse(&field[fs..fe]).unwrap_or(f64::NAN));
+                        } else {
+                            chunk_values.push(f64::NAN);
+                        }
+                    }
+                }
+            }
+            // Handle last line of the chunk if it's the very last line of the file
+            chunk_values
         })
+        .flatten()
         .collect();
     
     let len = values.len();
@@ -91,7 +111,6 @@ pub fn parse_numeric_csv_fast(
     delimiter: u8,
     skip_lines: usize,
 ) -> Result<Float64Array, JsValue> {
-    // Step 1: Find all line boundaries using SIMD
     let mut line_starts = vec![0];
     line_starts.extend(memchr_iter(b'\n', data).map(|pos| pos + 1));
     
@@ -99,90 +118,52 @@ pub fn parse_numeric_csv_fast(
         return Ok(Float64Array::new(&JsValue::from(0)));
     }
     
-    // Step 2: Process lines in parallel
-    let values: Vec<f64> = line_starts[skip_lines..]
-        .par_windows(2)
-        .flat_map(|window| {
-            let start = window[0];
-            let end = window[1].saturating_sub(1); // Remove \n
-            if start >= end { return vec![]; }
-            
-            let line = &data[start..end];
-            parse_line_fast(line, delimiter)
+    let remaining_lines = &line_starts[skip_lines..];
+    let num_lines = remaining_lines.len();
+    let num_threads = rayon::current_num_threads();
+    let lines_per_chunk = (num_lines / num_threads).max(1024);
+
+    let values: Vec<f64> = remaining_lines.par_chunks(lines_per_chunk)
+        .map(|chunk| {
+            let mut chunk_values = Vec::with_capacity(chunk.len() * 8);
+            for window in chunk.windows(2) {
+                let s = window[0];
+                let e = window[1].saturating_sub(1);
+                if s < e {
+                    let line = &data[s..e];
+                    for field in line.split(|&b| b == delimiter) {
+                        let mut fs = 0;
+                        while fs < field.len() && field[fs].is_ascii_whitespace() { fs += 1; }
+                        let mut fe = field.len();
+                        while fe > fs && field[fe - 1].is_ascii_whitespace() { fe -= 1; }
+                        if fs < fe {
+                            chunk_values.push(fast_float::parse(&field[fs..fe]).unwrap_or(f64::NAN));
+                        } else {
+                            chunk_values.push(f64::NAN);
+                        }
+                    }
+                }
+            }
+            chunk_values
         })
+        .flatten()
         .collect();
-    
-    // Handle last line if it doesn't end with \n
-    if let Some(&last_start) = line_starts.last() {
-        if last_start < data.len() {
-            let last_line = &data[last_start..];
-            let mut last_values = values;
-            last_values.extend(parse_line_fast(last_line, delimiter));
-            
-            let array = Float64Array::new(&JsValue::from(last_values.len() as u32));
-            array.copy_from(&last_values);
-            return Ok(array);
-        }
-    }
     
     let array = Float64Array::new(&JsValue::from(values.len() as u32));
     array.copy_from(&values);
     Ok(array)
 }
 
-/// Parse a single line into f64 values
-/// No allocations, direct byte→float conversion
-#[inline]
-fn parse_line_fast(line: &[u8], delimiter: u8) -> Vec<f64> {
-    let mut values = Vec::with_capacity(16);
-    let mut start = 0;
-    
-    // Find delimiter positions
-    for pos in memchr_iter(delimiter, line) {
-        if let Some(val) = parse_f64_bytes(&line[start..pos]) {
-            values.push(val);
-        }
-        start = pos + 1;
-    }
-    
-    // Last field
-    if start < line.len() {
-        if let Some(val) = parse_f64_bytes(&line[start..]) {
-            values.push(val);
-        }
-    }
-    
-    values
-}
-
-/// Manual f64 parser from ASCII bytes
-/// Handles: integers, decimals, scientific notation, +/- signs
-/// Returns None for invalid input
+/// Manual f64 parser from ASCII bytes (keeping for backward compat if needed)
 #[inline]
 fn parse_f64_bytes(bytes: &[u8]) -> Option<f64> {
-    if bytes.is_empty() {
-        return None;
-    }
-    
-    // Trim whitespace
+    if bytes.is_empty() { return None; }
     let mut start = 0;
+    while start < bytes.len() && bytes[start].is_ascii_whitespace() { start += 1; }
     let mut end = bytes.len();
-    
-    while start < end && bytes[start].is_ascii_whitespace() {
-        start += 1;
-    }
-    while end > start && bytes[end - 1].is_ascii_whitespace() {
-        end -= 1;
-    }
-    
-    if start >= end {
-        return None;
-    }
-    
-    let trimmed = &bytes[start..end];
-    
-    // Use fast-float for the actual parsing (it's optimized for this)
-    fast_float::parse(trimmed).ok()
+    while end > start && bytes[end - 1].is_ascii_whitespace() { end -= 1; }
+    if start >= end { return None; }
+    fast_float::parse(&bytes[start..end]).ok()
 }
 
 /// Ultra-fast fixed-width numeric parser
