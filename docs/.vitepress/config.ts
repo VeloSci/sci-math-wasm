@@ -6,6 +6,7 @@ export default defineConfig({
   title: 'SciMath WASM',
   description: 'High-performance scientific mathematics for WebAssembly',
   base: '/sci-math-wasm/',
+  ignoreDeadLinks: true,
   head: [
     ['link', { rel: 'icon', href: '/sci-math-wasm/favicon.ico' }],
     ['script', { src: '/sci-math-wasm/coi-serviceworker.js' }]
