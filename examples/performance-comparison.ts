@@ -101,12 +101,12 @@ class BenchmarkRunner {
         // Warm-up
         try {
             await wasmFn();
-        } catch (e) {
+        } catch (e: any) {
             console.log('WASM warm-up failed:', e.message);
         }
         try {
             tsFn();
-        } catch (e) {
+        } catch (e: any) {
             console.log('TS warm-up failed:', e.message);
         }
 
@@ -119,7 +119,7 @@ class BenchmarkRunner {
                 const end = performance.now();
                 wasmTimes.push(end - start);
                 console.log(`  WASM run ${i + 1}: ${(end - start).toFixed(2)}ms`);
-            } catch (e) {
+            } catch (e: any) {
                 console.log(`  WASM run ${i + 1}: FAILED - ${e.message}`);
                 wasmTimes.push(NaN);
             }
@@ -134,9 +134,9 @@ class BenchmarkRunner {
                 const end = performance.now();
                 tsTimes.push(end - start);
                 console.log(`  TS run ${i + 1}: ${(end - start).toFixed(2)}ms`);
-            } catch (e) {
+            } catch (e: any) {
                 console.log(`  TS run ${i + 1}: FAILED - ${e.message}`);
-                tsTimes.push(NaN);
+                wasmTimes.push(NaN);
             }
         }
 
@@ -200,32 +200,30 @@ async function runSimulation() {
     const { wasm: wasmSmall, ts: tsSmall } = await BenchmarkRunner.runBenchmark(
         'Small CSV (10K rows)',
         async () => {
-            const streamer = new TextStreamer().setDelimiter(44);
-            const chunk = new Uint8Array(smallCSVBytes);
-            return streamer.processChunk(chunk);
+            const streamer = new TextStreamer().setDelimiter(44).setSkipLines(1);
+            return streamer.processNumericChunk(smallCSVBytes);
         },
         () => TypeScriptParser.parseCSV(smallCSV)
     );
 
     BenchmarkRunner.printComparison('Small CSV', wasmSmall, tsSmall);
 
-    // Test 2: Large CSV (100K rows)
-    console.log('\n--- Test 2: Large CSV File (100K rows × 8 columns) ---');
+    // Test 2: Large CSV (100K rows) - COLUMNAR TURBO
+    console.log('\n--- Test 2: Large CSV File (100K rows × 8 columns) - COLUMNAR ---');
     const largeCSV = TestDataGenerator.generateCSV(100000, 8);
     const largeCSVBytes = new TextEncoder().encode(largeCSV);
 
     const { wasm: wasmLarge, ts: tsLarge } = await BenchmarkRunner.runBenchmark(
-        'Large CSV (100K rows)',
+        'Large CSV (100K rows) - Columnar',
         async () => {
-            const streamer = new TextStreamer().setDelimiter(44);
-            const chunk = new Uint8Array(largeCSVBytes);
-            return streamer.processChunk(chunk);
+            const streamer = new TextStreamer().setDelimiter(44).setSkipLines(1);
+            return streamer.processColumnarChunk(largeCSVBytes);
         },
         () => TypeScriptParser.parseCSV(largeCSV),
-        3 // Fewer iterations for large file
+        3 
     );
 
-    BenchmarkRunner.printComparison('Large CSV', wasmLarge, tsLarge);
+    BenchmarkRunner.printComparison('Large CSV (Columnar)', wasmLarge, tsLarge);
 
     // Test 3: MPT File with Headers
     console.log('\n--- Test 3: MPT File (50K rows with 60-line header) ---');
@@ -237,9 +235,8 @@ async function runSimulation() {
         async () => {
             const streamer = new TextStreamer()
                 .setDelimiter(9)
-                .setSkipLines(60);
-            const chunk = new Uint8Array(mptBytes);
-            return streamer.processChunk(chunk);
+                .setSkipLines(61);
+            return streamer.processColumnarChunk(mptBytes);
         },
         () => TypeScriptParser.parseMPT(mptData)
     );
