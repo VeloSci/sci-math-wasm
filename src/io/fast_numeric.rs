@@ -173,7 +173,7 @@ pub fn parse_fixed_width_fast(
     widths: Vec<usize>,
     skip_lines: usize,
 ) -> Result<Float64Array, JsValue> {
-    let total_width: usize = widths.iter().sum::<usize>() + widths.len() - 1;
+    let _total_width: usize = widths.iter().sum::<usize>() + widths.len() - 1;
     
     // Find line boundaries
     let mut line_starts = vec![0];
