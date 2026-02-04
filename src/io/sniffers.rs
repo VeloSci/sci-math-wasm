@@ -63,6 +63,10 @@ const XLSX_MAGIC: &[u8] = &[0x50, 0x4B, 0x03, 0x04]; // PK.. (ZIP)
 const XLS_MAGIC: &[u8] = &[0xD0, 0xCF, 0x11, 0xE0];  // OLE Compound
 const HDF5_MAGIC: &[u8] = &[0x89, 0x48, 0x44, 0x46]; // .HDF
 const PDF_MAGIC: &[u8] = &[0x25, 0x50, 0x44, 0x46];  // %PDF
+const PARQUET_MAGIC: &[u8] = b"PAR1";
+const NETCDF_MAGIC: &[u8] = b"CDF\x01";
+const ARROW_MAGIC: &[u8] = b"ARROW1";
+const MAT_MAGIC: &[u8] = b"MATLAB 5.0";
 
 /// Common delimiters to check
 const DELIMITERS: &[(u8, &str)] = &[
@@ -348,6 +352,50 @@ fn check_binary_format(bytes: &[u8]) -> Option<FormatHint> {
     if magic == PDF_MAGIC {
         return Some(FormatHint {
             format: "pdf".to_string(),
+            delimiter: 0,
+            confidence: 0.99,
+            skip_lines: 0,
+            is_binary: true,
+            comment_char: 0,
+        });
+    }
+
+    if bytes.starts_with(ARROW_MAGIC) {
+        return Some(FormatHint {
+            format: "arrow".to_string(),
+            delimiter: 0,
+            confidence: 0.99,
+            skip_lines: 0,
+            is_binary: true,
+            comment_char: 0,
+        });
+    }
+
+    if bytes.starts_with(PARQUET_MAGIC) {
+        return Some(FormatHint {
+            format: "parquet".to_string(),
+            delimiter: 0,
+            confidence: 0.99,
+            skip_lines: 0,
+            is_binary: true,
+            comment_char: 0,
+        });
+    }
+
+    if bytes.starts_with(NETCDF_MAGIC) {
+        return Some(FormatHint {
+            format: "netcdf".to_string(),
+            delimiter: 0,
+            confidence: 0.99,
+            skip_lines: 0,
+            is_binary: true,
+            comment_char: 0,
+        });
+    }
+
+    if bytes.starts_with(MAT_MAGIC) {
+        return Some(FormatHint {
+            format: "matlab".to_string(),
             delimiter: 0,
             confidence: 0.99,
             skip_lines: 0,
