@@ -26,9 +26,13 @@ pub mod text;
 pub mod binary;
 pub mod sniffers;
 pub mod fast_numeric;  // Ultra-fast zero-copy numeric parser
+pub mod npy;           // NumPy .npy file parser
+pub mod matlab;        // MATLAB .mat file parser
 
 // Re-export main types for convenience
-pub use text::TextStreamer;
+pub use text::{TextStreamer, CSVReaderOptions, read_csv_with_options, write_csv};
 pub use binary::read_excel_file;
 pub use sniffers::{sniff_format, FormatHint};
+pub use npy::read_npy;
+pub use matlab::read_mat_file;
 pub use fast_numeric::{parse_numeric_csv_fast, parse_fixed_width_fast, alloc_parse_buffer, parse_buffer_in_place, get_result_ptr, get_result_len};
