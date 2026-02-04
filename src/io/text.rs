@@ -108,3 +108,67 @@ impl TextStreamer {
         unsafe { (std::mem::transmute(valid), starts) }
     }
 }
+
+/// Advanced CSV Reader options
+#[wasm_bindgen]
+pub struct CSVReaderOptions {
+    pub delimiter: u8,
+    pub has_header: bool,
+    pub quote_char: Option<u8>,
+    pub comment_char: Option<u8>,
+}
+
+#[wasm_bindgen]
+impl CSVReaderOptions {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        Self { delimiter: b',', has_header: true, quote_char: b'"'.into(), comment_char: b'#'.into() }
+    }
+}
+
+/// Reads a CSV/TSV file with advanced configuration options.
+#[wasm_bindgen]
+pub fn read_csv_with_options(data: &[u8], options: Option<CSVReaderOptions>) -> Result<JsValue, JsValue> {
+    let opts = options.unwrap_or(CSVReaderOptions::new());
+    let mut rdr = csv::ReaderBuilder::new()
+        .delimiter(opts.delimiter)
+        .has_headers(opts.has_header)
+        .quote(opts.quote_char.unwrap_or(b'"'))
+        .comment(opts.comment_char)
+        .from_reader(data);
+
+    let mut result = Vec::new();
+    
+    if opts.has_header {
+        if let Ok(headers) = rdr.headers() {
+             result.push(headers.iter().map(|s| s.to_string()).collect::<Vec<_>>());
+        }
+    }
+    
+    for result_row in rdr.records() {
+        let record = result_row.map_err(|e| JsValue::from_str(&e.to_string()))?;
+        result.push(record.iter().map(|s| s.to_string()).collect::<Vec<_>>());
+    }
+    
+    Ok(serde_wasm_bindgen::to_value(&result)?)
+}
+
+/// Writes data to a CSV string.
+#[wasm_bindgen]
+pub fn write_csv(data: JsValue, delimiter: Option<u8>) -> Result<String, JsValue> {
+    let rows: Vec<Vec<String>> = serde_wasm_bindgen::from_value(data)?;
+    if rows.is_empty() { return Ok(String::new()); }
+    
+    let mut wtr = csv::WriterBuilder::new()
+        .delimiter(delimiter.unwrap_or(b','))
+        .from_writer(vec![]);
+
+    for row in rows {
+        wtr.write_record(&row).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    }
+    
+    let data = String::from_utf8(wtr.into_inner().map_err(|e| JsValue::from_str(&e.to_string()))?)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        
+    Ok(data)
+}
