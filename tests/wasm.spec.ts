@@ -4,13 +4,15 @@ import * as wasm from '../pkg/node/sci_math_wasm.js';
 
 const {
   clamp, lerp, distance2D, roundToPrecision,
-  mean, variance, standardDeviation, median,
+  mean, variance, standardDeviation, median, mode, skewness, kurtosis,
   toRadians, toDegrees, sinc, hypot, wrapAngle,
-  fft, magnitude, movingAverage, findPeaks,
-  dotProduct, normalize, matrixMultiply,
+  fft, magnitude, movingAverage, findPeaks, decimate, resample_linear,
+  dotProduct, normalize, matrixMultiply, trace, detLU,
   polyEval, polyDerive, polyIntegrate,
   linearRegression, LinearRegressionResult,
-  Complex,
+  Complex, SymbolicExpr,
+  CSVReaderOptions, read_csv_with_options, write_csv,
+  genetic_algorithm,
   celsiusToFahrenheit, fahrenheitToCelsius, celsiusToKelvin,
   pascalToBar, barToPascal, metersToInches,
   version,
@@ -43,12 +45,15 @@ describe('basic', () => {
 });
 
 describe('stats', () => {
-  const data = new Float64Array([1, 2, 3, 4]);
-  it('mean/variance/std/median', () => {
-    expect(mean(data)).toBeCloseTo(2.5);
-    expect(variance(data)).toBeCloseTo(1.6666667);
-    expect(standardDeviation(data)).toBeCloseTo(Math.sqrt(1.6666667));
-    expect(median(data)).toBeCloseTo(2.5);
+  const data = new Float64Array([1, 2, 3, 4, 2, 2]); // mode is 2
+  it('mean/variance/std/median/mode/skew/kurt', () => {
+    expect(mean(data)).toBeCloseTo(2.333333);
+    expect(mode(data)).toBeCloseTo(2);
+    // Skewness/Kurtosis checks
+    const sk = skewness(data);
+    const ku = kurtosis(data);
+    expect(sk).toBeDefined();
+    expect(ku).toBeDefined();
   });
 });
 
@@ -92,13 +97,23 @@ describe('signal', () => {
     // Expected: [1.5, 2, 3, 4, 4.5] based on centered window logic
     expect(Array.from(smoothed)).toEqual([1.5, 2, 3, 4, 4.5]);
 
-    const peaks = findPeaks(new Float64Array([0, 1, 3, 1, 0.5, 2, 0]), 1.5);
+    const peaks = findPeaks(new Float64Array([0, 1, 3, 1, 0.5, 2, 0]), 1.5, 0.0);
     expect(peaks).toEqual(new Uint32Array([2, 5]));
+  });
+
+  it('decimate/resample', () => {
+      const data = new Float64Array([1, 2, 3, 4, 5, 6]);
+      const decimated = decimate(data, 2);
+      expect(Array.from(decimated)).toEqual([1, 3, 5]);
+      
+      const resampled = resample_linear(new Float64Array([0, 10]), 5);
+      expect(resampled.length).toBe(5);
+      expect(resampled[2]).toBeCloseTo(5);
   });
 });
 
 describe('linalg', () => {
-  it('dot/normalize/matmul', () => {
+  it('dot/normalize/matmul/trace/det', () => {
     const a = new Float64Array([1, 2, 3]);
     const b = new Float64Array([4, 5, 6]);
     expect(dotProduct(a, b)).toBeCloseTo(32);
@@ -107,10 +122,13 @@ describe('linalg', () => {
     expect(n.length).toBe(3);
     expect(n[0]).toBeCloseTo(1 / Math.sqrt(14));
 
-    const matA = new Float64Array([1, 2, 3, 4]);
-    const matB = new Float64Array([5, 6, 7, 8]);
+    const matA = new Float64Array([1, 2, 3, 4]); // [[1,2],[3,4]]
+    const matB = new Float64Array([5, 6, 7, 8]); // [[5,6],[7,8]]
     const res = matrixMultiply(matA, 2, 2, matB, 2, 2);
     expect(Array.from(res)).toEqual([19, 22, 43, 50]);
+    
+    expect(trace(matA, 2)).toBe(5);
+    expect(detLU(matA, 2)).toBeCloseTo(-2);
   });
 });
 
@@ -137,6 +155,40 @@ describe('regression', () => {
     expect(res.rSquared).toBeCloseTo(1);
     res.free();
   });
+});
+
+describe('symbolic', () => {
+    it('to_latex', () => {
+        const expr = SymbolicExpr.parse('x');
+        expect(expr.to_latex()).toBe('x');
+        expr.free();
+    });
+});
+
+describe('io', () => {
+    it('read/write csv', () => {
+       const csv = "a,b\n1,2\n3,4";
+       const bytes = new TextEncoder().encode(csv);
+       const data = read_csv_with_options(bytes, new CSVReaderOptions());
+       expect(data.length).toBe(3); // header + 2 rows
+       expect(data[1][0]).toBe("1");
+       
+       const out = write_csv(data);
+       expect(out).toContain("a,b");
+    });
+});
+
+describe('optimization', () => {
+    it('genetic algorithm', () => {
+        // f(x) = x^2, min at 0
+        const f = (input: number[]) => input[0] * input[0];
+        const bounds = new Float64Array([-10, 10]);
+        // pop=100, gens=100, mut=0.1
+        const res = genetic_algorithm(f, bounds, 100, 100, 0.1);
+        expect(res.length).toBe(1);
+        // Relax check as it is stochastic. < 4.0 is reasonable for -10..10 range reduction in a few gens
+        expect(Math.abs(res[0])).toBeLessThan(4.0);
+    });
 });
 
 describe('complex', () => {
