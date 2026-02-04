@@ -63,11 +63,39 @@ async function startEngine() {
     // 3. Create the Engine instance
     const engine = new SciEngine();
     
-    // 4. Use it!
-    const id = engine.create_vector_f64(1000000);
-    // ...
+    // 4. Zero-Copy Workflow (Crucial for Performance)
+    // Instead of copying data back and forth, you access the WASM memory directly.
+    const size = 1_000_000;
+    const inputId = engine.create_vector(size); // returns a unique ID
+    const outputId = engine.create_vector(size);
+    
+    // Get pointers to WASM memory
+    const ptrIn = engine.get_ptr(inputId);
+    const ptrOut = engine.get_ptr(outputId);
+    
+    // Create TypedArrays that use the WASM memory buffer
+    const { memory } = await import('@velo-sci/sci-math-wasm');
+    const inputBuffer = new Float64Array(memory.buffer, ptrIn, size);
+    const outputBuffer = new Float64Array(memory.buffer, ptrOut, size);
+    
+    // Now you can fill inputBuffer from JS and run engine methods
+    inputBuffer.set(myLargeData);
+    
+    // Run an in-place/memory-to-memory operation
+    engine.smooth_sg(inputId, outputId, 11, 2);
+    
+    // Result is directly available in outputBuffer!
+    console.log(outputBuffer[0]);
 }
 ```
+
+### Why use `SciEngine`?
+While the top-level functions (like `smoothSG(data, ...)`) are convenient, they involve **copying** data from JavaScript to WASM and then back. 
+
+The `SciEngine` class allows you to:
+1. **Pre-allocate** memory once.
+2. **Reuse** buffers across multiple operations (e.g., `smooth` -> `remove_baseline` -> `fft`).
+3. **Zero-Copy**: Access results directly from the WASM linear memory heap.
 
 ## 4. Performance Insights (V13)
 
