@@ -54,6 +54,35 @@ function standardDeviation(data: Float64Array | number[]): number
 Calculates the median (50th percentile). High-performance implementation using partial sorting (quickselect) in WASM.
 
 **Signature:**
-```typescript
 function median(data: Float64Array | number[]): number
+```
+
+---
+
+### `mode`
+Calculates the mode (most frequent value) of the dataset.
+
+**Signature:**
+```typescript
+function mode(data: Float64Array | number[]): number
+```
+
+---
+
+### `skewness`
+Calculates the skewness, a measure of the asymmetry of the probability distribution of a real-valued random variable.
+
+**Signature:**
+```typescript
+function skewness(data: Float64Array | number[]): number
+```
+
+---
+
+### `kurtosis`
+Calculates the kurtosis, a measure of the "tailedness" of the probability distribution.
+
+**Signature:**
+```typescript
+function kurtosis(data: Float64Array | number[]): number
 ```
