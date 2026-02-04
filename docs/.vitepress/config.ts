@@ -1,6 +1,10 @@
 import { defineConfig } from 'vitepress'
 import markdownItKatex from 'markdown-it-katex'
 import wasm from 'vite-plugin-wasm'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   title: 'SciMath WASM',
@@ -20,9 +24,18 @@ export default defineConfig({
     plugins: [
       wasm()
     ],
+    worker: {
+      format: 'es',
+      plugins: () => [
+        wasm()
+      ]
+    },
 
     resolve: {
-      preserveSymlinks: true
+      preserveSymlinks: true,
+      alias: {
+        '@wasm': path.resolve(__dirname, '../../pkg/web')
+      }
     },
     server: {
       fs: {
@@ -65,10 +78,14 @@ export default defineConfig({
         {
           text: 'API Reference',
           items: [
+            { text: 'SciEngine (Core)', link: '/api/engine' },
             { text: 'Basic Math', link: '/api/basic' },
             { text: 'Statistics', link: '/api/stats' },
             { text: 'Linear Algebra', link: '/api/linalg' },
             { text: 'Signal Processing', link: '/api/signal' },
+            { text: 'File I/O', link: '/api/io' },
+            { text: 'Optimization', link: '/api/optimization' },
+            { text: 'Symbolic Math', link: '/api/symbolic' },
             { text: 'Trigonometry', link: '/api/trig' },
             { text: 'Polynomials', link: '/api/poly' },
             { text: 'Regression', link: '/api/regression' },
