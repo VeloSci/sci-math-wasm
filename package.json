@@ -1,6 +1,6 @@
 {
   "name": "@velo-sci/sci-math-wasm",
-  "version": "0.2.6",
+  "version": "1.0.0",
   "description": "High-performance scientific mathematical functions for WebAssembly",
   "type": "module",
   "main": "./pkg/web/sci_math_wasm.js",
@@ -24,7 +24,7 @@
     "docs:build": "node scripts/fix-wasm-workers.js && vitepress build docs",
     "docs:preview": "vitepress preview docs",
     "wasm:build:node": "wasm-pack build --target nodejs --out-dir pkg/node --release -- --features threads,console_error_panic_hook",
-    "wasm:build:web": "wasm-pack build --target web --out-dir pkg/web --release -- --features wasm-threads && node scripts/fix-wasm-workers.js",
+    "wasm:build:web": "wasm-pack build --target web --out-dir pkg/web --release -- --features wasm-threads && node scripts/fix-wasm-workers.js && node scripts/wrap-wasm.cjs",
     "wasm:build": "pnpm wasm:build:node && pnpm wasm:build:web",
     "test": "pnpm test:ts",
     "test:ts": "pnpm wasm:build:node && node scripts/fix-pkg.cjs && vitest run",
