@@ -40,12 +40,28 @@ function fitPolynomial(x: Float64Array | number[], y: Float64Array | number[], o
 
 ---
 
-### `fitGaussians` / `fitExponential` / `fitLogarithmic`
+### `fitGaussians`
+Fits a sum of $N$ Gaussian curves to the data using the Levenberg-Marquardt algorithm.
+
+**Signature:**
+```typescript
+function fitGaussians(
+  x: Float64Array | number[], 
+  y: Float64Array | number[], 
+  initial: number[]
+): Float64Array
+```
+
+*   `initial`: Array of parameters sorted as `[amp1, mu1, sigma1, amp2, mu2, sigma2, ...]`.
+*   Returns: Optimized parameters in the same format.
+
+---
+
+### `fitExponential` / `fitLogarithmic`
 Non-linear regression models for specific data patterns.
 
 **Signatures:**
 ```typescript
-function fitGaussians(x: Float64Array | number[], y: Float64Array | number[], initial: [a: number, mu: number, sigma: number]): number[]
 function fitExponential(x: Float64Array | number[], y: Float64Array | number[]): [a: number, b: number] | null
 function fitLogarithmic(x: Float64Array | number[], y: Float64Array | number[]): [a: number, b: number] | null
 ```
