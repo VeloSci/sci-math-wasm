@@ -17,11 +17,16 @@ const results = ref<Record<string, BenchResult>>({
   'io_csv_columnar': { id: 'io_csv_columnar', name: 'CSV Columnar (100K rows)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
   'io_mpt': { id: 'io_mpt', name: 'MPT File Processing', js: 0, wasm: 0, ratio: 0, status: 'pending' },
   'io_format_detection': { id: 'io_format_detection', name: 'Format Detection', js: 0, wasm: 0, ratio: 0, status: 'pending' },
-  'nbody': { id: 'nbody', name: 'N-Body Turbo (f32x4 SIMD)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
+  // 'nbody': { id: 'nbody', name: 'N-Body Turbo (f32x4 SIMD)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
   'calculus': { id: 'calculus', name: 'Calculus (Diff+Integ 1M pts)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
   'deconvolution': { id: 'deconvolution', name: 'Deconvolution (100k pts)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
   'filters': { id: 'filters', name: 'Butterworth Filter (1M pts)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
   'analysis_fitting': { id: 'analysis_fitting', name: 'Analysis & Fitting (1M pts)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
+  'stats_adv': { id: 'stats_adv', name: 'Advanced Stats (Mode/Skew/Kurt)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
+  'linalg_trace': { id: 'linalg_trace', name: 'Matrix Trace (1024x1024)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
+  'linalg_det': { id: 'linalg_det', name: 'Matrix Determinant (8x8)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
+  'signal_adv': { id: 'signal_adv', name: 'Signal Resample/Decimate', js: 0, wasm: 0, ratio: 0, status: 'pending' },
+  'optimization_ga': { id: 'optimization_ga', name: 'Genetic Algorithm', js: 0, wasm: 0, ratio: 0, status: 'pending' },
   'fft': { id: 'fft', name: 'FFT (65k Points)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
   'matmul': { id: 'matmul', name: 'Matrix Matmul (f64 Blocked)', js: 0, wasm: 0, ratio: 0, status: 'pending' },
 })
@@ -58,8 +63,17 @@ const startBenchmarks = () => {
     results.value[key].ratio = 0
   }
 
+  console.log('Creating worker...')
   worker = new Worker(new URL('../workers/bench.worker.ts', import.meta.url), { type: 'module' })
+  
+  worker.onerror = (error) => {
+    console.error('Worker error:', error)
+    addLog(`Worker initialization error: ${error.message}`)
+    isRunning.value = false
+  }
+  
   worker.onmessage = (e) => {
+    console.log('Worker message:', e.data)
     const { type, message, id, status, js, wasm, ratio } = e.data
     switch (type) {
       case 'log': addLog(message); break
@@ -71,6 +85,8 @@ const startBenchmarks = () => {
       case 'error': addLog(`CRITICAL ERROR: ${message}`); isRunning.value = false; worker?.terminate(); break
     }
   }
+  
+  console.log('Posting start message to worker...')
   worker.postMessage({ type: 'start' })
 }
 
