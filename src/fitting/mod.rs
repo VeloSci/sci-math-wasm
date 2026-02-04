@@ -43,7 +43,7 @@ pub fn fit_linear(x: &[f64], y: &[f64]) -> (f64, f64, f64) {
 }
 
 /// Solve Ax = b using Gauss-Jordan elimination with partial pivoting.
-pub fn solve_linear_system(a: &mut [f64], b: &mut [f64], n: usize) -> Option<Vec<f64>> {
+pub(crate) fn solve_linear_system(a: &mut [f64], b: &mut [f64], n: usize) -> Option<Vec<f64>> {
     for i in 0..n {
         let mut max_row = i;
         let mut max_val = a[i * n + i].abs();
@@ -133,51 +133,66 @@ pub fn fit_polynomial(x: &[f64], y: &[f64], order: usize) -> Option<Vec<f64>> {
     solve_linear_system(&mut matrix, &mut b_vec, n)
 }
 
-/// Gaussian function: y = A * exp(-(x-mu)^2 / (2*sigma^2))
-fn gaussian(x: f64, a: f64, mu: f64, sigma: f64) -> f64 {
-    if sigma.abs() < 1e-12 { return 0.0; }
-    a * (-(x - mu).powi(2) / (2.0 * sigma.powi(2))).exp()
+/// Multi-Gaussian function: y = sum(A_i * exp(-(x-mu_i)^2 / (2*sigma_i^2)))
+fn multi_gaussian(x: f64, p: &[f64]) -> f64 {
+    let mut sum = 0.0;
+    for i in (0..p.len()).step_by(3) {
+        let amp = p[i];
+        let mu = p[i+1];
+        let sigma = p[i+2];
+        if sigma.abs() > 1e-12 {
+            sum += amp * (-(x - mu).powi(2) / (2.0 * sigma.powi(2))).exp();
+        }
+    }
+    sum
 }
 
-/// Levenberg-Marquardt for Gaussian Fitting
-pub fn fit_gaussians(x: &[f64], y: &[f64], initial: [f64; 3]) -> Vec<f64> {
-    let mut p = initial;
+/// Levenberg-Marquardt for Multi-Gaussian Fitting
+pub fn fit_gaussians(x: &[f64], y: &[f64], initial: &[f64]) -> Vec<f64> {
+    let mut p = initial.to_vec();
+    let n_params = p.len();
+    if n_params % 3 != 0 { return p; }
+    
     let mut lambda = 0.001;
     
-    for _iter in 0..20 {
+    for _iter in 0..30 {
         let (j_t_j_sum, j_t_r_sum, total_error_sum) = x.par_iter().zip(y.par_iter()).with_min_len(4096).fold(
-            || (vec![0.0; 9], vec![0.0; 3], 0.0),
+            || (vec![0.0; n_params * n_params], vec![0.0; n_params], 0.0),
             |(mut jtj, mut jtr, mut err), (&xi, &yi)| {
-                let amp = p[0];
-                let mu = p[1];
-                let sigma = p[2];
+                let mut fi = 0.0;
+                let mut jac = vec![0.0; n_params];
                 
-                if sigma.abs() < 1e-12 { return (jtj, jtr, err); }
+                for k in (0..n_params).step_by(3) {
+                    let amp = p[k];
+                    let mu = p[k+1];
+                    let sigma = p[k+2];
+                    
+                    if sigma.abs() < 1e-12 { continue; }
+                    
+                    let exp_term = (-(xi - mu).powi(2) / (2.0 * sigma.powi(2))).exp();
+                    fi += amp * exp_term;
+                    
+                    jac[k] = exp_term;
+                    jac[k+1] = amp * exp_term * (xi - mu) / sigma.powi(2);
+                    jac[k+2] = amp * exp_term * (xi - mu).powi(2) / sigma.powi(3);
+                }
                 
-                let exp_term = (-(xi - mu).powi(2) / (2.0 * sigma.powi(2))).exp();
-                let fi = amp * exp_term;
                 let ri = yi - fi;
                 err += ri.powi(2);
 
-                let d_a = exp_term;
-                let d_mu = amp * exp_term * (xi - mu) / sigma.powi(2);
-                let d_sigma = amp * exp_term * (xi - mu).powi(2) / sigma.powi(3);
-
-                let jac = [d_a, d_mu, d_sigma];
-
-                for r in 0..3 {
-                    for c in 0..3 {
-                        jtj[r * 3 + c] += jac[r] * jac[c];
+                for r in 0..n_params {
+                    for c in 0..n_params {
+                        jtj[r * n_params + c] += jac[r] * jac[c];
                     }
                     jtr[r] += jac[r] * ri;
                 }
                 (jtj, jtr, err)
             }
         ).reduce(
-            || (vec![0.0; 9], vec![0.0; 3], 0.0),
+            || (vec![0.0; n_params * n_params], vec![0.0; n_params], 0.0),
             |(mut jtj1, mut jtr1, err1), (jtj2, jtr2, err2)| {
-                for i in 0..9 { jtj1[i] += jtj2[i]; }
-                for i in 0..3 { jtr1[i] += jtr2[i]; }
+                for i in 0..jtj1.len() { jtj1[i] += jtj2[i]; }
+                for i in 0..jtr1.len() { jtr1[i] += jtr2[i]; }
                 (jtj1, jtr1, err1 + err2)
             }
         );
@@ -185,26 +200,26 @@ pub fn fit_gaussians(x: &[f64], y: &[f64], initial: [f64; 3]) -> Vec<f64> {
         let mut j_t_j = j_t_j_sum;
         let mut j_t_r_vec = j_t_r_sum;
 
-        for i in 0..3 { j_t_j[i * 3 + i] += lambda * j_t_j[i * 3 + i]; }
+        for i in 0..n_params { j_t_j[i * n_params + i] += lambda * j_t_j[i * n_params + i]; }
 
-        if let Some(delta) = solve_linear_system(&mut j_t_j, &mut j_t_r_vec, 3) {
-            let mut p_new = p;
-            for i in 0..3 { p_new[i] += delta[i]; }
+        if let Some(delta) = solve_linear_system(&mut j_t_j, &mut j_t_r_vec, n_params) {
+            let mut p_new = p.clone();
+            for i in 0..n_params { p_new[i] += delta[i]; }
 
             let new_error = x.par_iter().zip(y.par_iter()).with_min_len(4096).map(|(&xi, &yi)| {
-                (yi - gaussian(xi, p_new[0], p_new[1], p_new[2])).powi(2)
+                (yi - multi_gaussian(xi, &p_new)).powi(2)
             }).sum::<f64>();
 
             if new_error < total_error_sum {
                 lambda /= 10.0;
                 p = p_new;
-                if (total_error_sum - new_error).abs() < 1e-6 { break; }
+                if (total_error_sum - new_error).abs() < 1e-7 { break; }
             } else {
                 lambda *= 10.0;
             }
         } else { break; }
     }
-    p.to_vec()
+    p
 }
 
 /// Exponential Fit: y = A * exp(B * x) - Parallel
