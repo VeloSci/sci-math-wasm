@@ -1,4 +1,4 @@
-# Implementation Plan - Phases 3 & 4: Analysis & Fitting
+# Implementation Plan - Phases 3 & 4: Analysis & Fitting [COMPLETED]
 
 This plan details the implementation of advanced Signal Processing and Data Fitting modules in `sci-math-wasm`.
 
@@ -11,44 +11,38 @@ This plan details the implementation of advanced Signal Processing and Data Fitt
 ## Proposed Changes
 
 ### 1. `src/analysis/mod.rs` (Signal Processing)
-*   **Smoothing**: Implement `savitzky_golay` filter.
-    *   *Strategy*: Pre-compute coefficients for fixed window sizes (e.g., 5, 7, 9) or solve convolution on the fly. For performance, we'll implement a fast convolution kernel.
-*   **Peak Detection**: Implement `find_peaks`.
-    *   *Algorithm*: Simple local maxima check `y[i-1] < y[i] > y[i+1]` + `threshold` + `prominence` (simplified).
-*   **Baseline Correction**: Implement `baseline_als` (Asymmetric Least Squares Smoothing).
-    *   *Note*: Requires solving a sparse linear system. We might simplify this to a rolling minimum or polynomial subtraction for this iteration if a sparse solver is too heavy. -> *Decision*: We'll implement a **Polish Polynomial** baseline removal (iterative fitting) as it reuses the Fitting module.
+*   [x] **Smoothing**: Implement `savitzky_golay` filter. (Generalized for any window/degree).
+*   [x] **Peak Detection**: Implement `find_peaks`. (Includes Prominence and Threshold).
+*   [x] **Baseline Correction**: Implement **Polish Polynomial** baseline removal (iterative fitting).
 
 ### 2. `src/fitting/mod.rs` (Data Fitting)
-*   **Linear Algebra Helper**: We need a solver for $Ax = b$.
-    *   *Implementation*: Gauss-Jordan elimination for small/medium systems (sufficient for PolyFit order < 10).
-*   **Linear Regression**: `fit_linear(x, y) -> (slope, intercept, r2)`.
-    *   *Optimization*: Single pass accumulation.
-*   **Polynomial Fitting**: `fit_poly(x, y, order) -> coeffs`.
-    *   *Algorithm*: Construct Normal Equations ($X^T X \beta = X^T y$) and solve.
-*   **Non-Linear Fitting**: `fit_levenberg_marquardt`.
-    *   *Target*: Fit a sum of Gaussians (common in spectroscopy).
-    *   *Algorithm*: Damped Least Squares loop.
+*   [x] **Linear Algebra Helper**: Solver for $Ax = b$ (Gauss-Jordan).
+*   [x] **Linear Regression**: `fit_linear(x, y) -> (slope, intercept, r2)`.
+*   [x] **Polynomial Fitting**: `fit_poly(x, y, order) -> coeffs`.
+*   [x] **Non-Linear Fitting**: `fit_levenberg_marquardt` for Multi-Gaussian support.
 
 ### 3. `src/engine.rs` (Public API)
-*   Expose new methods:
+*   [x] Expose new methods:
     *   `smooth_savitzky_golay(id, window, order)`
-    *   `detect_peaks(id, threshold)`
+    *   `detect_peaks(id, threshold, prominence)`
     *   `fit_linear(x_id, y_id)`
     *   `fit_poly(x_id, y_id, order)`
+    *   `fit_gaussians(x_id, y_id, initial_params)`
+    *   `remove_baseline(id, x_id, order, oid, iters)`
 
 ### 4. `bench.worker.ts`
-*   Add benchmarks:
+*   [x] Add benchmarks:
     *   `Analysis (Peaks + Smooth 1M)`
     *   `Fitting (PolyFit Order 5)`
 
-## Verification Plan
+## Verification Plan [DONE]
 
 ### Automated Tests
-*   `tests/wasm.spec.ts`: Add test cases for each new function.
-    *   Verify PolyFit accuracy against known equations (e.g., $y = 2x^2 + 3x + 1$).
-    *   Verify Peak Detection on generated gaussian data.
+*   [x] `tests/wasm.spec.ts` & `tests/engine.spec.ts`: Added test cases for each new function.
+    *   [x] Verify PolyFit accuracy.
+    *   [x] Verify Peak Detection on generated data.
 
 ### Benchmarks
-*   Run the full suite. Target:
-    *   Fitting: > 2x vs JS (Matrix inversion in WASM should win).
-    *   Analysis: > 1.5x vs JS (Pointer scanning).
+*   [x] Run the full suite. Target:
+    *   [x] Fitting: > 2x vs JS.
+    *   [x] Analysis: > 1.5x vs JS.
