@@ -23,6 +23,41 @@ pub fn fft_radix2(re: &mut [f64], im: &mut [f64], inverse: bool) {
         let wpr = (delta_angle).cos();
         let wpi = (delta_angle).sin();
         
+        // SIMD for step == 1 (The most frequent butterflies)
+        #[cfg(target_feature = "simd128")]
+        {
+            if step == 1 {
+                use core::arch::wasm32::*;
+                let n_simd = n / 2;
+                unsafe {
+                    let pr = p_re as *mut f64;
+                    let pi = p_im as *mut f64;
+                    for i in 0..n_simd {
+                        let j = 2 * i;
+                        let k = j + 1;
+                        
+                        let rej = *pr.add(j);
+                        let rek = *pr.add(k);
+                        let imj = *pi.add(j);
+                        let imk = *pi.add(k);
+                        
+                        let vj = f64x2(rej, imj);
+                        let vk = f64x2(rek, imk);
+                        
+                        let v_add = f64x2_add(vj, vk);
+                        let v_sub = f64x2_sub(vj, vk);
+                        
+                        *pr.add(j) = f64x2_extract_lane::<0>(v_add);
+                        *pi.add(j) = f64x2_extract_lane::<1>(v_add);
+                        *pr.add(k) = f64x2_extract_lane::<0>(v_sub);
+                        *pi.add(k) = f64x2_extract_lane::<1>(v_sub);
+                    }
+                }
+                step = jump;
+                continue;
+            }
+        }
+
         // Parallelize over groups if there are enough butterflies to justify overhead
         if n >= 2048 {
             (0..n).into_par_iter().step_by(jump).for_each(|group_start| unsafe {
