@@ -10,10 +10,11 @@ WebAssembly (WASM) allows us to execute code at near-native speeds. For computat
 
 ### Key Factors in Performance:
 
-1. **V13 Hyper-Parallel Engine**: Our latest version implements **Adaptive Parallelism**. It intelligently switches between sequential execution for small tasks and massive multi-threaded chunking for heavy workloads.
-2. **SIMD Optimization**: Most kernels are hand-optimized with WebAssembly SIMD (Single Instruction, Multiple Data) to process multiple values per clock cycle.
-3. **Rayon Work Stealing**: We utilize a work-stealing thread pool to ensure all CPU cores are balanced and utilized during complex calculations.
-4. **Predictable Performance**: WASM execution is deterministic and lacks the garbage collection pauses common in large-scale JavaScript applications.
+1. **V15 Hyper-Parallel Engine**: Implements **Adaptive Parallelism**, intelligently switching between sequential execution for small tasks and massive multi-threaded chunking for heavy workloads.
+2. **Stateful Vector Management**: Using the `SciEngine` API allows keeping data in WASM memory across multiple operations, avoiding costly data serialization/deserialization.
+3. **SIMD & Zero-Copy**: Hand-optimized SIMD kernels combined with `Float64Array::view` for zero-copy data access between Rust and JS.
+4. **Rayon Work Stealing**: Advanced thread-pooling that balances workloads across all available cores in the background.
+5. **Predictable Latency**: No Garbage Collection (GC) pressure for intensive math loops, ensuring ultra-low jitters in real-time analysis.
 
 ---
 
