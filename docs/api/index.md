@@ -4,6 +4,7 @@ Welcome to the SciMath WASM API Reference. This library provides high-performanc
 
 ## Modules
 
+- [SciEngine (Core)](/api/engine) - Stateful engine and vector management
 - [Basic Math](/api/basic) - Core mathematical functions and constants
 - [Statistics](/api/stats) - Statistical analysis and probability distributions
 - [Linear Algebra](/api/linalg) - Matrix and vector operations
@@ -15,3 +16,5 @@ Welcome to the SciMath WASM API Reference. This library provides high-performanc
 - [Calculus](/api/calculus) - Numerical integration and differentiation
 - [Unit Conversions](/api/units) - Physical unit conversions
 - [File I/O](/api/io) - Scientific data file parsing (CSV, Excel, auto-detection)
+- [Optimization](/api/optimization) - Genetic algorithms and minimization
+- [Symbolic Math](/api/symbolic) - Symbolic expression parsing and LaTeX conversion
