@@ -81,3 +81,23 @@ Inverts small matrices directly for high performance.
 function invert2x2(m: Float64Array | number[]): Float64Array
 function invert3x3(m: Float64Array | number[]): Float64Array
 ```
+
+---
+
+### `trace`
+Calculates the trace of a square matrix (sum of diagonal elements).
+
+**Signature:**
+```typescript
+function trace(matrix: Float64Array | number[], n: number): number
+```
+
+---
+
+### `detLU`
+Calculates the determinant of a square matrix using LU decomposition.
+
+**Signature:**
+```typescript
+function detLU(matrix: Float64Array | number[], n: number): number
+```
