@@ -161,24 +161,33 @@ const numericData = readExcelNumeric(fileBytes, 0, 1);
 // numericData = [1.23, 4.56, 7.89, NaN, 10.11, ...]
 ```
 
-### Example: Multi-Sheet Excel
+### NumPy Binary (.npy)
 
-```typescript
-import { getExcelInfo, readExcelSheet } from 'sci-math-wasm';
+#### `read_npy(fileBytes: Uint8Array): DataFrame`
+Reads a NumPy binary file directly into a stateful DataFrame.
 
-const fileBytes = new Uint8Array(await file.arrayBuffer());
+---
 
-// Get sheet information
-const info = getExcelInfo(fileBytes);
-console.log('Available sheets:', info.sheetNames);
+## DataFrame API
 
-// Read specific sheets
-const rawData = readExcelSheet(fileBytes, 0);      // First sheet
-const processedData = readExcelSheet(fileBytes, 1); // Second sheet
+The `DataFrame` class provides a high-level, column-oriented interface for data manipulation. It works in conjunction with `SciEngine` to keep data in WASM memory.
 
-// Or by name
-const calibration = readExcelSheetByName(fileBytes, 'Calibration');
-```
+### Static Methods
+
+#### `DataFrame.fromCSV(data: string | Uint8Array, options?: object): Promise<DataFrame>`
+Creates a DataFrame from CSV data. Automatically detects delimiters and headers.
+
+#### `DataFrame.fromNPY(bytes: Uint8Array): Promise<DataFrame>`
+Creates a DataFrame from a NumPy binary file.
+
+### Instance Methods
+
+#### `select(columns: string[]): DataFrame`
+Returns a new DataFrame with only the specified columns (zero-copy).
+
+#### `get(columnName: string): Float64Array`
+Retrieves the data for a specific column.
+
 
 ## Format Detection
 
@@ -277,6 +286,25 @@ async function processScientificFile(file) {
 | `finalize()` | - | `any[][]` | Process remaining data |
 | `getRowCount()` | - | `number` | Get total rows processed |
 | `reset()` | - | `void` | Reset streamer state |
+
+### Convenience Functions
+
+Simple, non-streaming functions for smaller datasets.
+
+| Function | Parameters | Return Type | Description |
+|----------|------------|-------------|-------------|
+| `read_csv_with_options` | `Uint8Array, CSVReaderOptions?` | `any[][]` | Read CSV with custom options |
+| `write_csv` | `any[][], number?` | `string` | Write data to CSV string |
+
+#### CSVReaderOptions
+```typescript
+class CSVReaderOptions {
+    delimiter: number;     // Default: 44 (comma)
+    has_header: boolean;   // Default: true
+    quote_char: number;    // Default: 34 (double quote)
+    comment_char: number;  // Default: 35 (hash)
+}
+```
 
 ### Binary Functions
 
