@@ -233,3 +233,45 @@ pub fn kurtosis(data: &[f64]) -> f64 {
     
     term1 * sum_fourth - term2
 }
+
+/// Finds the minimum value in a data set.
+#[wasm_bindgen]
+pub fn min(data: &[f64]) -> f64 {
+    data.par_iter()
+        .with_min_len(8192)
+        .cloned()
+        .reduce(|| f64::INFINITY, f64::min)
+}
+
+/// Finds the maximum value in a data set.
+#[wasm_bindgen]
+pub fn max(data: &[f64]) -> f64 {
+    data.par_iter()
+        .with_min_len(8192)
+        .cloned()
+        .reduce(|| f64::NEG_INFINITY, f64::max)
+}
+
+/// Detects anomalies in a data set using Z-score.
+/// Returns a flattened array of [index, score, index, score, ...].
+#[wasm_bindgen(js_name = detectAnomalies)]
+pub fn detect_anomalies(data: &[f64], threshold: f64) -> Vec<f64> {
+    if data.is_empty() { return vec![]; }
+    
+    let m = mean(data);
+    let s = standard_deviation(data);
+    if s == 0.0 { return vec![]; }
+    
+    data.par_iter()
+        .enumerate()
+        .filter_map(|(i, &x)| {
+            let score = (x - m).abs() / s;
+            if score > threshold {
+                Some(vec![i as f64, score])
+            } else {
+                None
+            }
+        })
+        .flatten()
+        .collect()
+}
