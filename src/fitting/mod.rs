@@ -133,6 +133,38 @@ pub fn fit_polynomial(x: &[f64], y: &[f64], order: usize) -> Option<Vec<f64>> {
     solve_linear_system(&mut matrix, &mut b_vec, n)
 }
 
+/// Fit Polynomial without X normalization (standard coefficients)
+pub fn fit_polynomial_standard(x: &[f64], y: &[f64], order: usize) -> Option<Vec<f64>> {
+    let n_pts = x.len();
+    if n_pts == 0 { return None; }
+    let n = order + 1;
+    
+    let (powers, vector_sums) = x.iter().zip(y.iter()).fold(
+        (vec![0.0; 2 * order + 1], vec![0.0; n]),
+        |mut acc, (&xi, &yi)| {
+            let mut p = 1.0;
+            for j in 0..=2 * order {
+                acc.0[j] += p;
+                if j <= order {
+                    acc.1[j] += p * yi;
+                }
+                p *= xi;
+            }
+            acc
+        }
+    );
+    
+    let mut matrix = vec![0.0; n * n];
+    let mut b_vec = vector_sums;
+    for i in 0..n {
+        for j in 0..n {
+            matrix[i * n + j] = powers[i + j];
+        }
+    }
+
+    solve_linear_system(&mut matrix, &mut b_vec, n)
+}
+
 /// Multi-Gaussian function: y = sum(A_i * exp(-(x-mu_i)^2 / (2*sigma_i^2)))
 fn multi_gaussian(x: f64, p: &[f64]) -> f64 {
     let mut sum = 0.0;
