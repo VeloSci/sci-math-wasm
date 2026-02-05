@@ -208,3 +208,26 @@ pub fn rfft_wasm(data: &[f64]) -> Result<Vec<f64>, JsValue> {
     Ok(output)
 }
 
+
+#[wasm_bindgen(js_name = fftComplex)]
+pub fn fft_complex_wasm(re: Vec<f64>, im: Vec<f64>) -> Result<Vec<f64>, JsValue> {
+    let n = re.len();
+    if n != im.len() {
+        return Err(JsValue::from_str("Real and imaginary parts must have the same length"));
+    }
+    if !n.is_power_of_two() {
+        return Err(JsValue::from_str("Length must be a power of two"));
+    }
+
+    let mut re_mut = re;
+    let mut im_mut = im;
+    fft_radix2(&mut re_mut, &mut im_mut, false);
+
+    let mut output = Vec::with_capacity(n * 2);
+    for i in 0..n {
+        output.push(re_mut[i]);
+        output.push(im_mut[i]);
+    }
+
+    Ok(output)
+}
