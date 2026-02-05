@@ -39,12 +39,12 @@ describe('IO Benchmarks', () => {
 
   bench('CSV Parsing 100K rows (Text)', () => {
     const streamer = new TextStreamer();
-    streamer.processChunk(largeCsv);
+    streamer.processNumericChunk(largeCsv);
   });
   
   bench('MPT Like Processing', () => {
       const streamer = new TextStreamer().setDelimiter(9).setSkipLines(4);
-      streamer.processChunk(mptLike);
+      streamer.processNumericChunk(mptLike);
   });
 
   bench('Format Detection', () => {
