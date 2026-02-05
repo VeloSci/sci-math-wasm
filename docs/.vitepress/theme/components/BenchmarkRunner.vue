@@ -142,16 +142,7 @@ onUnmounted(() => worker?.terminate())
         <div v-if="finished" id="scroll-container" class="results-dashboard custom-scroll">
           <div class="scroll-content">
             <div class="animated-sticky-header">
-              <div class="stats-grid">
-                <div class="stat-card">
-                  <div class="stat-label">MAX PERFORMANCE RATIO</div>
-                  <div class="stat-value">{{ maxRatio }}x</div>
-                </div>
-                <div class="stat-card">
-                  <div class="stat-label">ALGORITHMS VERIFIED</div>
-                  <div class="stat-value">{{ sortedResults.length }}</div>
-                </div>
-              </div>
+              
               <div class="bench-header">
                 <div class="bench-row header">
                   <div class="col-algo">ALGORITHM</div>
@@ -184,7 +175,7 @@ onUnmounted(() => worker?.terminate())
 
     <div class="lab-terminal">
       <div class="terminal-header">
-        <div class="dots"><span></span><span></span><span></span></div>
+        <div class="dots" style="display: flex; gap: 2px;"><span></span><span></span><span></span></div>
         <div class="title">IO SYSTEM CONSOLE v0.2.5</div>
       </div>
       <div id="bench-terminal" class="terminal-content custom-scroll">
