@@ -4,6 +4,7 @@ import { h } from 'vue';
 import './style.css';
 import BenchmarkRunner from './components/BenchmarkRunner.vue';
 import OptimizationHUD from './components/OptimizationHUD.vue';
+import Playground from './components/Playground.vue';
 
 const theme: Theme = {
   extends: DefaultTheme,
@@ -14,6 +15,7 @@ const theme: Theme = {
   },
   enhanceApp({ app }) {
     app.component('BenchmarkRunner', BenchmarkRunner);
+    app.component('Playground', Playground);
   }
 };
 
