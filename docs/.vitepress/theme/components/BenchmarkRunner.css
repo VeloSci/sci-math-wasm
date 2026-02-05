@@ -164,19 +164,6 @@
   z-index: 50;
   background: #050507;
   padding-top: 2rem;
-  animation: shrink-header linear both;
-  animation-timeline: --results-scroll;
-  animation-range: 0px 200px;
-}
-
-@keyframes shrink-header {
-  to {
-    padding-top: 1rem;
-    background: rgba(5, 5, 7, 0.95);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--glass-border);
-    box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-  }
 }
 
 .stats-grid {
@@ -184,13 +171,6 @@
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
   margin-bottom: 2rem;
-  animation: compact-stats linear both;
-  animation-timeline: --results-scroll;
-  animation-range: 0px 200px;
-}
-
-@keyframes compact-stats {
-  to { gap: 1rem; margin-bottom: 1rem; }
 }
 
 .stat-card {
@@ -201,9 +181,6 @@
   text-align: center;
   position: relative;
   overflow: hidden;
-  animation: shrink-card linear both;
-  animation-timeline: --results-scroll;
-  animation-range: 0px 200px;
 }
 
 .stat-card::after {
@@ -213,26 +190,14 @@
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
 }
 
-@keyframes shrink-card {
-  to { padding: 1rem; border-radius: 12px; }
-}
-
 .stat-label {
   font-size: 0.7rem; letter-spacing: 3px; opacity: 0.5; font-weight: 800;
-  animation: shrink-label linear both;
-  animation-timeline: --results-scroll;
-  animation-range: 0px 200px;
 }
-@keyframes shrink-label { to { font-size: 0.5rem; letter-spacing: 1px; } }
 
 .stat-value {
   font-size: 3.5rem; font-weight: 900; color: #00f2ff; line-height: 1; margin-top: 0.8rem;
   text-shadow: 0 0 30px rgba(0, 242, 255, 0.3);
-  animation: shrink-value linear both;
-  animation-timeline: --results-scroll;
-  animation-range: 0px 200px;
 }
-@keyframes shrink-value { to { font-size: 1.8rem; margin-top: 0.2rem; } }
 
 /* LIST-BASED RESULTS */
 .bench-row {
@@ -254,12 +219,7 @@
   letter-spacing: 1.2px;
   font-weight: 300;
   margin-bottom: 0;
-  animation: shrink-th linear both;
-  animation-timeline: --results-scroll;
-  animation-range: 0px 200px;
 }
-
-@keyframes shrink-th { to { padding-top: 0.8rem; padding-bottom: 0.8rem; } }
 
 .bench-row:not(.header):hover {
   background: rgba(255,255,255,0.05);
