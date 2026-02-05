@@ -7,6 +7,7 @@ pub struct TextStreamer {
     pub(crate) delimiter: u8,
     pub(crate) skip_lines: usize,
     pub(crate) remainder: Vec<u8>,
+    pub(crate) processing_buffer: Vec<u8>,
     pub(crate) lines_skipped_count: usize,
     pub(crate) col_count: Option<usize>,
 }
@@ -19,6 +20,7 @@ impl TextStreamer {
             delimiter: b',',
             skip_lines: 0,
             remainder: Vec::new(),
+            processing_buffer: Vec::new(),
             lines_skipped_count: 0,
             col_count: None,
         }
@@ -38,10 +40,13 @@ impl TextStreamer {
 
     #[wasm_bindgen(js_name = processNumericChunk)]
     pub fn process_numeric_chunk(&mut self, chunk: &[u8]) -> Result<Float64Array, JsValue> {
-        let (valid, starts) = self.prepare_valid_data(chunk);
-        if starts.is_empty() { return Ok(Float64Array::new(&JsValue::from(0))); }
+        let delimiter = self.delimiter;
+        let values = {
+            let (valid, starts) = self.prepare_valid_data(chunk);
+            if starts.is_empty() { return Ok(Float64Array::new(&JsValue::from(0))); }
+            parallel_numeric_parse(valid, delimiter, &starts)
+        };
 
-        let values = parallel_numeric_parse(valid, self.delimiter, &starts);
         let array = Float64Array::new(&JsValue::from(values.len() as u32));
         array.copy_from(&values);
         Ok(array)
@@ -49,16 +54,24 @@ impl TextStreamer {
 
     #[wasm_bindgen(js_name = processColumnarChunk)]
     pub fn process_columnar_chunk(&mut self, chunk: &[u8]) -> Result<JsValue, JsValue> {
-        let (valid, starts) = self.prepare_valid_data(chunk);
-        if starts.is_empty() { return Ok(js_sys::Array::new().into()); }
+        let delimiter = self.delimiter;
+        let mut cc = self.col_count;
 
-        let cc = self.col_count.unwrap_or_else(|| {
-            let count = valid[starts[0]..starts[1].saturating_sub(1)].split(|&b| b == self.delimiter).count();
-            self.col_count = Some(count);
-            count
-        });
+        let cols = {
+            let (valid, starts) = self.prepare_valid_data(chunk);
+            if starts.is_empty() { return Ok(js_sys::Array::new().into()); }
 
-        let cols = parallel_columnar_parse(valid, self.delimiter, &starts, cc);
+            let current_cc = cc.unwrap_or_else(|| {
+                let first_line = &valid[starts[0]..starts[1].saturating_sub(1)];
+                let count = first_line.split(|&b| b == delimiter).count();
+                count
+            });
+            cc = Some(current_cc);
+            parallel_columnar_parse(valid, delimiter, &starts, current_cc)
+        };
+
+        self.col_count = cc;
+
         let result = js_sys::Array::new();
         for col in cols {
             let arr = Float64Array::new_with_length(col.len() as u32);
@@ -70,42 +83,53 @@ impl TextStreamer {
 
     #[wasm_bindgen(js_name = processChunk)]
     pub fn process_chunk(&mut self, chunk: &[u8]) -> Result<JsValue, JsValue> {
-        let (valid, starts) = self.prepare_valid_data(chunk);
-        if starts.is_empty() { return Ok(serde_wasm_bindgen::to_value(&Vec::<Vec<String>>::new())?); }
+        let delimiter = self.delimiter;
+        let rows: Vec<Vec<String>> = {
+            let (valid, starts) = self.prepare_valid_data(chunk);
+            if starts.is_empty() { return Ok(serde_wasm_bindgen::to_value(&Vec::<Vec<String>>::new())?); }
 
-        let rows: Vec<Vec<String>> = starts.windows(2).map(|w| {
-            let line = &valid[w[0]..w[1].saturating_sub(1)];
-            line.split(|&b| b == self.delimiter)
-                .map(|f| String::from_utf8_lossy(f).trim().to_string())
-                .collect()
-        }).collect();
+            starts.windows(2).map(|w| {
+                let line = &valid[w[0]..w[1].saturating_sub(1)];
+                line.split(|&b| b == delimiter)
+                    .map(|f| String::from_utf8_lossy(f).trim().to_string())
+                    .collect()
+            }).collect()
+        };
         Ok(serde_wasm_bindgen::to_value(&rows)?)
     }
 
-    fn prepare_valid_data<'a>(&mut self, chunk: &[u8]) -> (&'a [u8], Vec<usize>) {
-        let mut data = std::mem::take(&mut self.remainder);
-        data.extend_from_slice(chunk);
+    fn prepare_valid_data(&mut self, chunk: &[u8]) -> (&[u8], Vec<usize>) {
+        // Move current remainder into processing buffer
+        self.processing_buffer = std::mem::take(&mut self.remainder);
+        self.processing_buffer.extend_from_slice(chunk);
         
-        let last_nl = match memchr::memrchr(b'\n', &data) {
+        let last_nl = match memchr::memrchr(b'\n', &self.processing_buffer) {
             Some(idx) => idx,
-            None => { self.remainder = data; return (&[], vec![]); }
+            None => { 
+                self.remainder = std::mem::take(&mut self.processing_buffer); 
+                return (&[], vec![]); 
+            }
         };
 
-        let (valid, rest) = data.split_at(last_nl + 1);
-        self.remainder = rest.to_vec();
+        // Split: part before last NL is valid THIS chunk, part after is NEXT chunk
+        let valid_len = last_nl + 1;
+        self.remainder = self.processing_buffer[valid_len..].to_vec();
+        self.processing_buffer.truncate(valid_len);
 
+        let valid = &self.processing_buffer;
         let mut starts = Vec::with_capacity(valid.len() / 40);
         let mut pos = 0;
         for nl in memchr::memchr_iter(b'\n', valid) {
-            if self.lines_skipped_count < self.skip_lines { self.lines_skipped_count += 1; }
-            else { starts.push(pos); }
+            if self.lines_skipped_count < self.skip_lines { 
+                self.lines_skipped_count += 1; 
+            } else { 
+                starts.push(pos); 
+            }
             pos = nl + 1;
         }
         if !starts.is_empty() { starts.push(valid.len()); }
         
-        // Safety: Valid lives as long as the data we just split. 
-        // Since we are returning it to JS and it will be processed immediately, transmute is used for the lifetime trick.
-        unsafe { (std::mem::transmute(valid), starts) }
+        (valid, starts)
     }
 }
 
