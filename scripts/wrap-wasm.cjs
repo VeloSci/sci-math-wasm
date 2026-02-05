@@ -1,20 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const WASM_THRESHOLD = 1000;
-
-function jsMean(data) {
-    let sum = 0;
-    for (let i = 0; i < data.length; i++) sum += data[i];
-    return sum / data.length;
-}
-
-/**
- * Hybrid Mean implementation
- */
-function mean(data) {
-    if (data.length < WASM_THRESHOLD) return jsMean(data);
-    return wasm.mean(data);
-}
 
 const targetFile = path.join(__dirname, '../pkg/web/sci_math_wasm.js');
 let content = fs.readFileSync(targetFile, 'utf8');
@@ -22,8 +7,7 @@ let content = fs.readFileSync(targetFile, 'utf8');
 // 1. Core DX Module
 const dxModule = `
 /**
- * SCI-MATH-WASM Advanced DX Layer
- * Implements Roadmap Phases 1-7
+ * SCI-MATH-WASM Advanced DX Layer - Roadmap Phase 1-7 Mastery
  */
 
 // --- Global State & Config ---
@@ -43,20 +27,34 @@ export function configure(options) {
 const _metrics = {
     ops: [],
     lastExecutionMs: 0,
-    gpuAvailable: false
+    gpuAvailable: false,
+    poolSize: 0
 };
 
 export function getMetrics() { return { ..._metrics }; }
 
-// --- WebGPU Detection (Phase 7) ---
-export async function isWebGPUSupported() {
-    if (typeof navigator === 'undefined' || !navigator.gpu) return false;
-    try {
-        const adapter = await navigator.gpu.requestAdapter();
-        _metrics.gpuAvailable = !!adapter;
-        return !!adapter;
-    } catch (e) {
-        return false;
+// --- Auto-Initialization (Zero-Config Milestone Q1) ---
+let _initPromise = null;
+let _isInitialized = false;
+
+async function _ensureInit() {
+    if (_isInitialized) return;
+    if (!_initPromise) {
+        if (_config.debug) console.log('[SciMathWASM] Auto-initializing engine...');
+        const { default: init } = await import('./sci_math_wasm.js');
+        _initPromise = init();
+    }
+    await _initPromise;
+    _isInitialized = true;
+}
+
+// --- Error Handling & Profiling ---
+export class MathError extends Error {
+    constructor(message, code, context = {}) {
+        super(message);
+        this.name = 'MathError';
+        this.code = code;
+        this.context = context;
     }
 }
 
@@ -71,21 +69,7 @@ function _logOp(name, start, success = true) {
     }
 }
 
-// --- Error Handling ---
-export class MathError extends Error {
-    constructor(message, code, context = {}) {
-        super(message);
-        this.name = 'MathError';
-        this.code = code;
-        this.context = context;
-    }
-}
-
-// --- Auto-Initialization REMOVED ---
-// The auto-initialization was causing circular imports in workers
-// Users must manually call init() before using the library
-
-// --- DataFrame API ---
+// --- DataFrame API (Hito Q2 Beta) ---
 export class DataFrame {
     constructor(engine = null, columns = {}) {
         this.engine = engine;
@@ -93,62 +77,59 @@ export class DataFrame {
     }
 
     static async fromCSV(data, options = {}) {
-        const { SciEngine, detectDelimiter, detectHeaderLines } = await import('./sci_math_wasm.js');
-        
+        await _ensureInit();
+        const { SciEngine } = await import('./sci_math_wasm.js');
         const engine = new SciEngine();
         const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : data;
-        
-        const delimiter = options.delimiter || await detectDelimiter(bytes.slice(0, 4096));
-        const skip = options.skipRows || await detectHeaderLines(bytes.slice(0, 4096));
-        
-        const ids = await engine.importCSV(bytes, delimiter, skip);
+        const ids = await engine.importCSV(bytes, options.delimiter || 44, options.skipRows || 0);
         const df = new DataFrame(engine);
-        
-        ids.forEach((id, i) => {
-            const name = "col_" + i;
-            engine.set_column_name(id, name);
-            df.columns[name] = id;
-        });
-        
+        ids.forEach((id, i) => { df.columns["col_" + i] = id; });
         return df;
     }
 
-    static async fromNPY(bytes) {
-        const { read_npy } = await import('./sci_math_wasm.js');
-        return read_npy(bytes);
-    }
-
-    select(cols) {
-        const newCols = {};
-        cols.forEach(c => { if (this.columns[c]) newCols[c] = this.columns[c]; });
-        return new DataFrame(this.engine, newCols);
+    head(n = 5) {
+        const result = {};
+        for (const [name, id] of Object.entries(this.columns)) {
+            const ptr = this.engine.get_ptr(id);
+            const len = Math.min(n, this.engine.vector_len(id));
+            const view = new Float64Array(wasm.memory.buffer, ptr, len);
+            result[name] = Array.from(view);
+        }
+        console.table(result);
+        return result;
     }
 }
-
-// --- Framework Hooks Placeholder ---
-export function useMath() { console.warn('Import from @velo-sci/sci-math-react for full hook support.'); }
 `;
 
-// 2. Wrap exported functions
-const functionRegex = /export function (\w+)\((.*?)\) \{/g;
-content = content.replace(functionRegex, (match, name, args) => {
+// 2. Wrap original functions to add auto-init and profiling
+const wrappedFunctions = [];
+content = content.replace(/export function (\w+)\((.*?)\) \{/g, (match, name, args) => {
     if (['init', 'initThreadPool', 'configure', 'getMetrics', 'isWebGPUSupported'].includes(name) || name.startsWith('__')) {
         return match;
     }
-    return `export async function ${name}(${args}) { 
+    wrappedFunctions.push({name, args});
+    return `function _raw_${name}(${args}) {`;
+});
+
+let wrappers = '\n// --- DX Discovery Wrappers (Zero-Config) ---\n';
+for (const {name, args} of wrappedFunctions) {
+    wrappers += `
+export async function ${name}(${args}) {
+    await _ensureInit();
     const _start = performance.now();
     try {
-        const _res = wasm.${name}(${args});
+        const _res = _raw_${name}(${args});
         _logOp('${name}', _start);
         return _res;
     } catch (e) {
         _logOp('${name}', _start, false);
         if (_config.onError) _config.onError(e);
-        throw new MathError("Operation " + name + " failed: " + e.message, 'WASM_PANIC', { originalError: e });
+        throw new MathError("Operation ${name} failed: " + e.message, 'WASM_PANIC', { originalError: e });
     }
+}
 `;
-});
+}
 
-// 3. Write final file
-fs.writeFileSync(targetFile, dxModule + content);
-console.log('Successfully applied Roadmap Phases 1-7 Mastery Wrapper.');
+// 3. Final Write
+fs.writeFileSync(targetFile, dxModule + content + wrappers);
+console.log('Successfully applied Roadmap Q1/Q2 Mastery Wrapper.');
