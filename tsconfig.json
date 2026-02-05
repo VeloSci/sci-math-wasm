@@ -7,13 +7,18 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "types": ["vitepress/client", "node", "vitest", "vue", "vite/client"]
+    "types": ["vitepress/client", "node", "vitest", "vue", "vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@wasm/*": ["pkg/web/*"]
+    }
   },
   "include": [
     "docs/**/*.ts",
     "docs/**/*.vue",
     "docs/.vitepress/**/*.ts",
     "docs/.vitepress/**/*.vue",
-    "tests/**/*.ts"
+    "tests/**/*.ts",
+    "pkg/web/*.d.ts"
   ]
 }
