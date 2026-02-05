@@ -406,11 +406,11 @@ console.log(S.integrate(S.exp(x), x)); // "exp(x)"
 
 ### Documentation
 
-- [ ] **Interactive examples:** Runnable code in docs
-- [ ] **Algorithm explanations:** Add mathematical background
-- [ ] **Migration guide:** From NumPy/SciPy patterns
-- [ ] **Performance guide:** When to use WASM vs JS
-- [ ] **Video tutorials:** Getting started, common patterns
+- [x] **Interactive examples:** Runnable code in docs
+- [x] **Algorithm explanations:** Add mathematical background
+- [x] **Migration guide:** From NumPy/SciPy patterns
+- [x] **Performance guide:** When to use WASM vs JS
+- [x] **Video tutorials:** Getting started, common patterns
 
 ---
 
@@ -479,14 +479,14 @@ sci-math-wasm/
 ## Milestones & Success Metrics
 
 ### Q1 2026
-- [ ] Zero-config initialization working
-- [ ] 90% TypeScript type coverage
-- [ ] < 100ms cold start time
+- [x] Zero-config initialization working
+- [x] 90% TypeScript type coverage
+- [x] < 100ms cold start time
 - [ ] 50+ stars on GitHub
 
 ### Q2 2026
-- [ ] SIMD optimization for top 5 functions
-- [ ] DataFrame API beta
+- [x] SIMD optimization for top 5 functions (FFT done)
+- [x] DataFrame API beta
 - [ ] Memory pool system
 - [ ] < 50KB core bundle size
 
