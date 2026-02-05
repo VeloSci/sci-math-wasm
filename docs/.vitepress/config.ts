@@ -70,7 +70,9 @@ export default defineConfig({
           items: [
             { text: 'Getting Started', link: '/guide/getting-started' },
             { text: 'Integration Guide', link: '/guide/integration' },
-            { text: 'WASM Performance', link: '/guide/performance' }
+            { text: 'WASM Performance', link: '/guide/performance' },
+            { text: 'Migration Guide', link: '/guide/migration' },
+            { text: 'Video Tutorials', link: '/guide/tutorials' }
           ]
         }
       ],
