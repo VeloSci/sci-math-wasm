@@ -1,6 +1,6 @@
 {
   "name": "@velo-sci/sci-math-wasm",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "High-performance scientific mathematical functions for WebAssembly",
   "type": "module",
   "main": "./pkg/web/sci_math_wasm.js",

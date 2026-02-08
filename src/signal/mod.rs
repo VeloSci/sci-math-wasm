@@ -5,17 +5,24 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 pub fn fft(input: &[f64]) -> Result<Vec<f64>, JsValue> {
     let n = input.len();
-    if !n.is_power_of_two() {
-        return Err(JsValue::from_str("Input length must be a power of two"));
+    if n == 0 {
+        return Err(JsValue::from_str("Input must not be empty"));
     }
-
-    let mut re = input.to_vec();
-    let mut im = vec![0.0; n];
+    // Auto-pad to next power of 2
+    let padded_n = n.next_power_of_two();
+    let mut re = if padded_n == n {
+        input.to_vec()
+    } else {
+        let mut v = vec![0.0; padded_n];
+        v[..n].copy_from_slice(input);
+        v
+    };
+    let mut im = vec![0.0; padded_n];
 
     crate::fft::fft_radix2(&mut re, &mut im, false);
 
-    let mut output = Vec::with_capacity(n * 2);
-    for i in 0..n {
+    let mut output = Vec::with_capacity(padded_n * 2);
+    for i in 0..padded_n {
         output.push(re[i]);
         output.push(im[i]);
     }

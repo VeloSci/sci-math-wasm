@@ -170,16 +170,29 @@ pub fn ifft_wasm(re: Vec<f64>, im: Vec<f64>) -> Result<Vec<f64>, JsValue> {
     if n != im.len() {
         return Err(JsValue::from_str("Real and imaginary parts must have the same length"));
     }
-    if !n.is_power_of_two() {
-        return Err(JsValue::from_str("Length must be a power of two"));
+    if n == 0 {
+        return Err(JsValue::from_str("Input must not be empty"));
     }
-
-    let mut re_mut = re;
-    let mut im_mut = im;
+    // Auto-pad to next power of 2
+    let padded_n = n.next_power_of_two();
+    let mut re_mut = if padded_n == n {
+        re
+    } else {
+        let mut v = vec![0.0; padded_n];
+        v[..n].copy_from_slice(&re);
+        v
+    };
+    let mut im_mut = if padded_n == n {
+        im
+    } else {
+        let mut v = vec![0.0; padded_n];
+        v[..n].copy_from_slice(&im);
+        v
+    };
     ifft_radix2(&mut re_mut, &mut im_mut);
 
-    let mut output = Vec::with_capacity(n * 2);
-    for i in 0..n {
+    let mut output = Vec::with_capacity(padded_n * 2);
+    for i in 0..padded_n {
         output.push(re_mut[i]);
         output.push(im_mut[i]);
     }
@@ -190,16 +203,25 @@ pub fn ifft_wasm(re: Vec<f64>, im: Vec<f64>) -> Result<Vec<f64>, JsValue> {
 #[wasm_bindgen(js_name = rfft)]
 pub fn rfft_wasm(data: &[f64]) -> Result<Vec<f64>, JsValue> {
     let n = data.len();
-    if !n.is_power_of_two() {
-        return Err(JsValue::from_str("Input length must be a power of two"));
+    if n == 0 {
+        return Err(JsValue::from_str("Input must not be empty"));
     }
-    let half_n = n / 2;
+    // Auto-pad to next power of 2
+    let padded_n = n.next_power_of_two();
+    let padded = if padded_n == n {
+        data.to_vec()
+    } else {
+        let mut v = vec![0.0; padded_n];
+        v[..n].copy_from_slice(data);
+        v
+    };
+    let half_n = padded_n / 2;
     let mut re_out = vec![0.0; half_n];
     let mut im_out = vec![0.0; half_n];
     
-    rfft_radix2(data, &mut re_out, &mut im_out);
+    rfft_radix2(&padded, &mut re_out, &mut im_out);
 
-    let mut output = Vec::with_capacity(n);
+    let mut output = Vec::with_capacity(padded_n);
     for i in 0..half_n {
         output.push(re_out[i]);
         output.push(im_out[i]);
@@ -215,16 +237,29 @@ pub fn fft_complex_wasm(re: Vec<f64>, im: Vec<f64>) -> Result<Vec<f64>, JsValue>
     if n != im.len() {
         return Err(JsValue::from_str("Real and imaginary parts must have the same length"));
     }
-    if !n.is_power_of_two() {
-        return Err(JsValue::from_str("Length must be a power of two"));
+    if n == 0 {
+        return Err(JsValue::from_str("Input must not be empty"));
     }
-
-    let mut re_mut = re;
-    let mut im_mut = im;
+    // Auto-pad to next power of 2
+    let padded_n = n.next_power_of_two();
+    let mut re_mut = if padded_n == n {
+        re
+    } else {
+        let mut v = vec![0.0; padded_n];
+        v[..n].copy_from_slice(&re);
+        v
+    };
+    let mut im_mut = if padded_n == n {
+        im
+    } else {
+        let mut v = vec![0.0; padded_n];
+        v[..n].copy_from_slice(&im);
+        v
+    };
     fft_radix2(&mut re_mut, &mut im_mut, false);
 
-    let mut output = Vec::with_capacity(n * 2);
-    for i in 0..n {
+    let mut output = Vec::with_capacity(padded_n * 2);
+    for i in 0..padded_n {
         output.push(re_mut[i]);
         output.push(im_mut[i]);
     }
